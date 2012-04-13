@@ -26,11 +26,8 @@ jQuery( function( $ ) {
 		init_map = function() {
 			if ( typeof google === 'object' && typeof google.maps === 'object' && typeof google.maps.Map === 'function' ) {
 				// The google maps API must be present to proceed
-				map = new google.maps.Map( $( '#ahmaps_map' ).get( 0 ), {
-					mapTypeId: google.maps.MapTypeId.TERRAIN,
-					center: new google.maps.LatLng( 0, 0 ),
-					zoom: 1
-				} );
+				map = new google.maps.Map2( $( '#ahmaps_map' ).get( 0 ) );
+				map.setCenter( new google.maps.LatLng( 0, 0 ), 1, G_PHYSICAL_MAP );
 				map_initialized = true;
 			} 
 			return map_initialized;
@@ -166,12 +163,12 @@ jQuery( function( $ ) {
 			}
 
 			if ( data.features.length > 0 ) {
-				kml_layer = new google.maps.KmlLayer( query.getHref().replace( 'geojson', 'kml' ), {
-					map: map
-				} );
-				google.maps.event.addListener( kml_layer, 'status_changed', function() {
-					$center_lat_input.val( kml_layer.getDefaultViewport().getCenter().lat() );
-					$center_lng_input.val( kml_layer.getDefaultViewport().getCenter().lng() );
+				kml_layer = new google.maps.GeoXml( query.getHref().replace( 'geojson', 'kml' ) );
+				map.addOverlay( kml_layer );
+				google.maps.Event.addListener( kml_layer, 'load', function() {
+					kml_layer.gotoDefaultViewport( map );
+					$center_lat_input.val( kml_layer.getDefaultCenter().lat() );
+					$center_lng_input.val( kml_layer.getDefaultCenter().lng() );
 				});
 				$.each( data.features, function( index, item ) {
 					$results_tbody.append(
@@ -190,7 +187,15 @@ jQuery( function( $ ) {
 	
 	if ( $stored_kml_url_input.val() ) {
 		query.setHref( $json_query_url_input.val() );
-		$.getJSON( $json_query_url_input.val(), loadJSON );
+		$.ajax( {
+			url: $json_query_url_input.val() + '&callback=?',
+			dataType: 'json',
+			success: loadJSON
+		} ).error( function( request, text_status, error ) {
+			$message_panel.text( error ).show();
+			$busy_panel.hide();
+			$query_panel.show();
+		} );
 	} else {
 		$busy_panel.hide();
 		$new_panel.show();

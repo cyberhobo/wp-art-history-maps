@@ -6,7 +6,7 @@
  */
 global $post_ID;
 $json_query_url = '';
-$stored_kml_url = get_post_meta( 'ahmaps_kml_url', $post_ID, true );
+$stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 if ( $stored_kml_url ) 
 	$json_query_url = str_replace( '/kml', '/geojson', $stored_kml_url );
 

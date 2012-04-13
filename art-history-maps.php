@@ -53,7 +53,6 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 			add_action( 'init', array( __CLASS__, 'action_init' ) );
 			add_action( 'admin_init', array( __CLASS__, 'action_admin_init' ) );
 			add_action( 'admin_menu', array( __CLASS__, 'action_admin_menu' ) );
-
 		}
 
 		static function api_url( $path ) {
@@ -78,7 +77,7 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 			$kml_url = get_post_meta( get_the_ID(), 'ahmaps_kml_url', true );
 			if ( $kml_url ) {
 				$kml_url .= '&amp;ext=.kml';
-				$link = '<a href="'. $kml_url . '">' . $args['text'] . '</a>';
+				$link = '<a href="' . $kml_url . '">' . $args['text'] . '</a>';
 			}
 			return $link;
 		}
@@ -151,7 +150,7 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 			if ( 'post-new.php' == $pagenow or ( 'post.php' == $pagenow and isset( $_GET['action'] ) and 'edit' == $_GET['action'] ) ) {
 
 				// Enqueue query form resources
-				wp_enqueue_script( 'google-maps-3', 'http://maps.google.com/maps/api/js?sensor=false', array(), false, true );
+				wp_enqueue_script( 'google-maps-2' );
 				wp_enqueue_script( 'ahmaps-query-form', path_join( self::$url_path, "query-form.js" ), array( 'jquery' ), self::$version, true );
 
 				// Add the meta box for all relevant post types
@@ -191,9 +190,6 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 
 	}
 
-	
 	ArtHistoryMaps::load();
-
-
 } // end if class exists
 
