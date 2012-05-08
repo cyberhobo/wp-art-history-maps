@@ -7,8 +7,15 @@
 global $post_ID;
 $json_query_url = '';
 $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
-if ( $stored_kml_url ) 
-	$json_query_url = str_replace( '/kml', '/geojson', $stored_kml_url );
+if ( $stored_kml_url ) {
+	if ( strpos( $stored_kml_url, '?surl=' ) ) {
+		 if ( preg_match( '/\?surl=(.*)$/', $stored_kml_url, $matches ) ) {
+			 $json_query_url = urldecode( $matches[1] );
+		 }
+	} else {
+		$json_query_url = str_replace( '/kml', '/geojson', $stored_kml_url );
+	}
+}
 
 ?>
 <div id="ahmaps_query_form">
@@ -40,6 +47,12 @@ if ( $stored_kml_url )
 		<input id="ahmaps_year_begin" class="no-submit" type="text" size="5" value="1900" /> to
 		<input id="ahmaps_year_end" class="no-submit" type="text" size="5" />
 		<button id="ahmaps_range_button">Limit Range</button>
+	</p>
+
+	<p>
+		<label>Type of Map</label>
+		<input id="ahmaps_map_type_point" type="radio" name="ahmaps_map_type" value="point" /> Point
+		<input id="ahmaps_map_type_heat" type="radio" name="ahmaps_map_type" value="heat" /> Heat
 	</p>
 
 	<div id="ahmaps_results_panel">

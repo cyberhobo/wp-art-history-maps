@@ -94,7 +94,12 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 
 			wp_verify_nonce( 'ahmaps_nonce' );
 
-			$new_kml_url = str_replace( '/geojson', '/kml', $_POST['ahmaps_json_query_url'] );
+			if ( 'heat' == $_POST['ahmaps_map_type'] ) {
+				$new_kml_url = 'http://geo.lib.purdue.edu/heatmapr/api/geojson/400/classic.kml?surl=' . 
+					urlencode( $_POST['ahmaps_json_query_url'] );
+			} else {
+				$new_kml_url = str_replace( '/geojson', '/kml', $_POST['ahmaps_json_query_url'] );
+			}
 			$saved_kml_url = get_post_meta( $post_id, 'ahmaps_kml_url', true );
 
 			if ( $new_kml_url == $saved_kml_url ) {
@@ -106,7 +111,7 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 
 			if ( class_exists( 'GeoMashupDB' ) ) {
 				if ( isset( $_POST['ahmaps_center_lat'] ) and isset( $_POST['ahmaps_center_lng'] ) ) {
-					// Use the Open Context center for the Geo Mashup location
+					// Use the center for the Geo Mashup location
 					$location = array( 'lat' => $_POST['ahmaps_center_lat'], 'lng' => $_POST['ahmaps_center_lng'] );
 					GeoMashupDB::set_object_location( 'post', $post_id, $location );
 				}

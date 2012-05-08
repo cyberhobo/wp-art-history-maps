@@ -14,6 +14,8 @@ jQuery( function( $ ) {
 		$year_start_input = $( '#ahmaps_year_begin' ),
 		$year_end_input = $( '#ahmaps_year_end' ),
 		$range_button = $( '#ahmaps_range_button' ),
+		$map_type_point = $( '#ahmaps_map_type_point' ),
+		$map_type_heat = $( '#ahmaps_map_type_heat' ),
 		$map = $( '#ahmaps_map' ),
 		$attach_button = $( '#ahmaps_attach_button' ),
 		map_initialized = false,
@@ -123,7 +125,7 @@ jQuery( function( $ ) {
 		 * Load an OpenContext.org json response
 		 */
 		loadJSON = function( data, text_status ) {
-			var bounds;
+			var bounds, kml_url;
 
 			if ( ! data ) {
 				$message_panel.append( $( '<span></span>' ).text( 'Got an empty response. ' ) )
@@ -157,13 +159,25 @@ jQuery( function( $ ) {
 			$year_end_input.val( ( query.getParameter( 'year_end' ) ? query.getParameter( 'year_end' ) : '' ) );
 			$range_button.hide();
 
+			if ( query.getParameter( 'map_type' ) == 'heat' ) {
+				$map_type_heat.prop( 'checked', true );
+			} else {
+				$map_type_point.prop( 'checked', true );
+			}
+
 			$results_tbody.empty();
 			if ( kml_layer ) {
-				kml_layer.setMap( null );
+				map.removeOverlay( kml_layer );
 			}
 
 			if ( data.features.length > 0 ) {
-				kml_layer = new google.maps.GeoXml( query.getHref().replace( 'geojson', 'kml' ) );
+				if ( query.getParameter( 'map_type' ) == 'heat' ) {
+					kml_url = 'http://geo.lib.purdue.edu/heatmapr/api/geojson/400/classic.kml?surl=' + 
+						encodeURIComponent( query.getHref() );
+				} else {
+					kml_url = query.getHref().replace( 'geojson', 'kml' );
+				}
+				kml_layer = new google.maps.GeoXml( kml_url );
 				map.addOverlay( kml_layer );
 				google.maps.Event.addListener( kml_layer, 'load', function() {
 					kml_layer.gotoDefaultViewport( map );
@@ -214,10 +228,17 @@ jQuery( function( $ ) {
 		query.execute();
 	} );
 
+	$form.delegate( 'input[name=ahmaps_map_type]', 'change', function() {
+		query.setParameter( 'map_type', $( this ).val() );
+		query.execute();
+		return true;
+	} );
+
 	$( 'input[type=text].no-submit' ).keypress( function( e ) {
 		if ( ( e.keyCode && e.keyCode === 13 ) || ( e.which && e.which === 13 ) ) {
 			return false;
 		}
+		return true;
 	} );
 	
 	$range_button.click( function() {
