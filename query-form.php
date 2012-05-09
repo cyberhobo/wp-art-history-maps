@@ -17,6 +17,24 @@ if ( $stored_kml_url ) {
 	}
 }
 
+$artist_ids = array();
+if ( strpos( $stored_kml_url, 'artistid' ) ) {
+	if ( preg_match( '/artistid=([^&]*)/', $stored_kml_url, $matches ) ) {
+		$artist_ids = explode( ',', urldecode( $matches[1] ) );
+	}
+}
+
+if( !class_exists( 'WP_Http' ) )
+	include_once( ABSPATH . WPINC. '/class-http.php' );
+$http = new WP_Http();
+$response = $http->get( 'http://geodev.lib.purdue.edu/dossin/api/artists/json' );
+$artists = array();
+if ( !is_wp_error( $response ) and $response['response']['code'] == '200' ) {
+	$body = json_decode( $response['body'] );
+	if ( count( $body->results[0] ) > 0 ) 
+		$artists = $body->results[0];
+}
+
 ?>
 <div id="ahmaps_query_form">
 <input id="ahmaps_stored_kml_url" type="hidden" value="<?php echo $stored_kml_url; ?>" />
@@ -29,7 +47,7 @@ if ( $stored_kml_url ) {
 		title="Loading..." />
 </div>
 
-<div id="ahmaps_message" style="display:none;"></div>
+<div id="ahmaps_message" class="error" style="display:none;"></div>
 
 <div id="ahmaps_query_panel" style="display:none;">
 	<div id="ahmaps_query_summary"></div>
@@ -39,7 +57,12 @@ if ( $stored_kml_url ) {
 	</div>
 			
 	<p>
-		<select id="ahmaps_artist_select" class="ahmaps-filter-select"></select>
+		<select id="ahmaps_artist_select" class="ahmaps-filter-select" size="7" multiple="true">
+			<option value="any"<?php if ( empty( $artist_ids ) ) echo ' selected="selected"'; ?>>any</option>
+		<?php foreach( $artists as $artist ) : ?>
+			<option value="<?php echo $artist->id; ?>"<?php if ( in_array( $artist->id, $artist_ids ) ) echo ' selected="selected"'; ?>><?php echo $artist->name; ?></option>
+		<?php endforeach; ?>
+		</select>
 	</p>
 	
 	<p>

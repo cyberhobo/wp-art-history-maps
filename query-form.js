@@ -98,11 +98,6 @@ jQuery( function( $ ) {
 
 			query.execute = function() {
 				var url = query_a.href;
-				if ( query_a.search ) {
-					url += '&callback=?';
-				} else {
-					url += '?callback=?';
-				}
 				$message_panel.text( '' ).hide();
 				$new_panel.hide();
 				$query_panel.hide();
@@ -110,7 +105,7 @@ jQuery( function( $ ) {
 				$attach_button.hide();
 				$.ajax( {
 					url: url,
-					dataType: 'json',
+					dataType: 'jsonp',
 					success: loadJSON
 				} ).error( function( request, text_status, error ) {
 					$message_panel.text( error ).show();
@@ -143,18 +138,6 @@ jQuery( function( $ ) {
 				}
 			}
 
-			$artist_select.hide().empty();
-			if ( data.facets && data.facets.context && data.facets.context.length > 0 ) {
-				$artist_select.append( $( '<option>Filter Artist:</option>' ) );
-				$.each( data.facets.context, function( index, value ) {
-					$artist_select.append( 
-						$( '<option></option>' ).attr( 'value', value.result_href )
-							.text( value.name  + ' (' + value.count + ')')
-					);
-				} );
-				$artist_select.show();
-			}
-
 			$year_start_input.val( ( query.getParameter( 'year_start' ) ? query.getParameter( 'year_start' ) : '' ) );
 			$year_end_input.val( ( query.getParameter( 'year_end' ) ? query.getParameter( 'year_end' ) : '' ) );
 			$range_button.hide();
@@ -170,7 +153,14 @@ jQuery( function( $ ) {
 				map.removeOverlay( kml_layer );
 			}
 
-			if ( data.features.length > 0 ) {
+			if ( data.features.length === 0 ) {
+
+				kml_layer = null;
+				map.setCenter( new google.maps.LatLng( 0, 0 ), 1 );
+				$message_panel.append( $( '<span></span>' ).text( 'No results found.' ) ).show();
+
+			} else {
+				
 				if ( query.getParameter( 'map_type' ) == 'heat' ) {
 					kml_url = 'http://geo.lib.purdue.edu/heatmapr/api/geojson/400/classic.kml?surl=' + 
 						encodeURIComponent( query.getHref() );
@@ -221,13 +211,6 @@ jQuery( function( $ ) {
 		return false;
 	} );
 
-	$form.delegate( '.ahmaps-filter-select', 'change', function() {
-		var a = $( '<a></a>' ).attr( 'href', $( this ).val() ).get( 0 ),
-			url = a.pathname;
-		query.setHref( $( this ).val() );
-		query.execute();
-	} );
-
 	$form.delegate( 'input[name=ahmaps_map_type]', 'change', function() {
 		query.setParameter( 'map_type', $( this ).val() );
 		query.execute();
@@ -241,6 +224,19 @@ jQuery( function( $ ) {
 		return true;
 	} );
 	
+	$artist_select.change( function() {
+
+		if ( $artist_select.val().join('').indexOf( 'any' ) >= 0 ) {
+			query.removeParameter( 'artistid' );
+			$artist_select.val( ['any'] );
+		} else {
+			query.setParameter( 'artistid', $artist_select.val().join(',') );
+		}
+		query.execute();
+
+		return true;
+	} );
+
 	$range_button.click( function() {
 		var year_start = parseInt( $year_start_input.val() ),
 			year_end = parseInt( $year_end_input.val() );
