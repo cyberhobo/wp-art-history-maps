@@ -9,8 +9,12 @@ jQuery( function( $ ) {
 		$new_panel = $( '#ahmaps_new_panel' ),
 		$new_button = $( '#ahmaps_new_button' ),
 		$query_panel = $( '#ahmaps_query_panel' ),
-		$results_tbody = $( '#ahmaps_results_table tbody' ),
+		$map_panel = $( '#ahmaps_map_panel' ),
+		$results_table = $( '#ahmaps_results_table' ),
+		$results_tbody = $results_table.children( 'tbody' ),
 		$artist_select = $( '#ahmaps_artist_select' ),
+		$country_select = $( '#ahmaps_country_select' ),
+		$filter_select = $( '#ahmaps_filter_select' ),
 		$year_start_input = $( '#ahmaps_year_begin' ),
 		$year_end_input = $( '#ahmaps_year_end' ),
 		$range_button = $( '#ahmaps_range_button' ),
@@ -100,7 +104,8 @@ jQuery( function( $ ) {
 				var url = query_a.href;
 				$message_panel.text( '' ).hide();
 				$new_panel.hide();
-				$query_panel.hide();
+				$map_panel.hide();
+				$results_table.hide();
 				$busy_panel.show();
 				$attach_button.hide();
 				$.ajax( {
@@ -110,7 +115,8 @@ jQuery( function( $ ) {
 				} ).error( function( request, text_status, error ) {
 					$message_panel.text( error ).show();
 					$busy_panel.hide();
-					$query_panel.show();
+					$map_panel.show();
+					$results_table.show();
 				} );
 			};
 			return query;
@@ -131,6 +137,8 @@ jQuery( function( $ ) {
 
 			$busy_panel.hide();
 			$query_panel.show();
+			$map_panel.show();
+			$results_table.show();
 			if ( ! map_initialized ) {
 				if ( ! init_map() ) {
 					setTimeout( function() { loadJSON( data, text_status ) }, 100 );
@@ -198,7 +206,6 @@ jQuery( function( $ ) {
 		} ).error( function( request, text_status, error ) {
 			$message_panel.text( error ).show();
 			$busy_panel.hide();
-			$query_panel.show();
 		} );
 	} else {
 		$busy_panel.hide();
@@ -231,6 +238,36 @@ jQuery( function( $ ) {
 			$artist_select.val( ['any'] );
 		} else {
 			query.setParameter( 'artistid', $artist_select.val().join(',') );
+		}
+		query.execute();
+
+		return true;
+	} );
+
+	$country_select.change( function() {
+
+		if ( $country_select.val().join('').indexOf( 'any' ) >= 0 ) {
+			query.removeParameter( 'countryid' );
+			$country_select.val( ['any'] );
+		} else {
+			query.setParameter( 'countryid', $country_select.val().join(',') );
+		}
+		query.execute();
+
+		return true;
+	} );
+
+	$filter_select.change( function() {
+
+		$filter_select.children().each( function() {
+			query.removeParameter( $(this).attr( 'value' ) );
+		});
+		if ( $filter_select.val().join('').indexOf( 'any' ) >= 0 ) {
+			$filter_select.val( ['any'] );
+		} else {
+			$.each( $filter_select.val(), function( i, filter ) {
+				query.setParameter( filter, '1' );
+			});
 		}
 		query.execute();
 
