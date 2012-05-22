@@ -152,6 +152,13 @@ if ( !is_wp_error( $filter_response ) and $filter_response['response']['code'] =
 		<button id="ahmaps_resolution_button">Set Resolution</button>
 	</p>
 
+	<p class="ahmaps-heat-parameter">
+		<label>Heat Map Color Scheme</label>
+		<input id="ahmaps_heat_map_ramp_classic" type="radio" name="ahmaps_heat_map_ramp" value="classic" /> Classic
+		<input id="ahmaps_heat_map_ramp_viking" type="radio" name="ahmaps_heat_map_ramp" value="viking" /> Viking
+		<input id="ahmaps_heat_map_ramp_sethoscope" type="radio" name="ahmaps_heat_map_ramp" value="sethoscope" /> Sethoscope
+	</p>
+
 	<div class="submit">
 		<input id="ahmaps_attach_button" name="ahmaps_attach_button" type="submit" value="Attach this data" />
 	</div>

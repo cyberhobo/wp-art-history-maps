@@ -24,6 +24,7 @@ jQuery( function( $ ) {
 		$attach_button = $( '#ahmaps_attach_button' ),
 		$heat_parameters = $( '.ahmaps-heat-parameter' ),
 		$heat_map_resolution_input = $( '#ahmaps_heat_map_resolution' ),
+		$heat_map_ramp_color = $( '#ahmaps_heat_map_ramp_classic' )
 		$resolution_button = $( '#ahmaps_resolution_button' ),
 		map_initialized = false,
 		map = null,
@@ -157,6 +158,7 @@ jQuery( function( $ ) {
 				$map_type_heat.prop( 'checked', true );
 				$heat_parameters.show();
 				$heat_map_resolution_input.val( ( query.getParameter( 'heat_map_resolution') || '200' ) );
+				$( '#ahmaps_heat_map_ramp_' + ( query.getParameter( 'heat_map_ramp' ) || 'classic' ) ).prop( 'checked', true );
 			} else {
 				$map_type_point.prop( 'checked', true );
 				$heat_parameters.hide();
@@ -178,8 +180,8 @@ jQuery( function( $ ) {
 				
 				if ( query.getParameter( 'map_type' ) == 'heat' ) {
 					kml_url = 'http://geo.lib.purdue.edu/heatmapr/api/geojson/' +
-						( query.getParameter( 'heat_map_resolution' ) || '200' ) +
-						'/classic.kml?surl=' + 
+						( query.getParameter( 'heat_map_resolution' ) || '200' ) + '/' +
+						( query.getParameter( 'heat_map_ramp' ) || 'classic' ) + '.kml?surl=' + 
 						encodeURIComponent( query.getHref() );
 				} else {
 					kml_url = query.getHref().replace( 'geojson', 'kml' );
@@ -224,14 +226,18 @@ jQuery( function( $ ) {
 	$form.delegate( '.ahmaps-filter-link', 'click', function() {
 		query.setHref( this.href );
 		query.execute();
-		return false;
+		return false; // don't follow link or propagate
 	} );
 
 	$form.delegate( 'input[name=ahmaps_map_type]', 'change', function() {
 		query.setParameter( 'map_type', $( this ).val() );
 		query.execute();
-		return true;
 	} );
+
+	$form.delegate( 'input[name=ahmaps_heat_map_ramp]', 'change', function() {
+		query.setParameter( 'heat_map_ramp', $( this ).val() );
+		query.execute();
+	})
 
 	$( 'input[type=text].no-submit' ).keypress( function( e ) {
 		if ( ( e.keyCode && e.keyCode === 13 ) || ( e.which && e.which === 13 ) ) {
