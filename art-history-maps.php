@@ -4,7 +4,7 @@
   Plugin Name: Art History Maps
   Plugin URI:
   Description: Query the Dossin art history web services for data to map in a post.
-  Version: 1.0.1
+  Version: 1.0.2
   Author: Dylan Kuhn
   Author URI: http://www.cyberhobo.net/
   Minimum WordPress Version Required: 3.0
