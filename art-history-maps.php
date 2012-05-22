@@ -95,7 +95,9 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 			wp_verify_nonce( 'ahmaps_nonce' );
 
 			if ( 'heat' == $_POST['ahmaps_map_type'] ) {
-				$new_kml_url = 'http://geo.lib.purdue.edu/heatmapr/api/geojson/400/classic.kml?surl=' . 
+				$new_kml_url = 'http://geo.lib.purdue.edu/heatmapr/api/geojson/' .
+					$_POST['ahmaps_heat_map_resolution'] . 
+					'/classic.kml?surl=' . 
 					urlencode( $_POST['ahmaps_json_query_url'] );
 			} else {
 				$new_kml_url = str_replace( '/geojson', '/kml', $_POST['ahmaps_json_query_url'] );

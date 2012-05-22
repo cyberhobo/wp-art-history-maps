@@ -22,6 +22,9 @@ jQuery( function( $ ) {
 		$map_type_heat = $( '#ahmaps_map_type_heat' ),
 		$map = $( '#ahmaps_map' ),
 		$attach_button = $( '#ahmaps_attach_button' ),
+		$heat_parameters = $( '.ahmaps-heat-parameter' ),
+		$heat_map_resolution_input = $( '#ahmaps_heat_map_resolution' ),
+		$resolution_button = $( '#ahmaps_resolution_button' ),
 		map_initialized = false,
 		map = null,
 		kml_layer = null,
@@ -50,7 +53,7 @@ jQuery( function( $ ) {
 
 			function parseParams() {
 				var e,
-					d = function (s) { return decodeURIComponent(s.replace(/\+/g, " ")); },
+					d = function (s) {return decodeURIComponent(s.replace(/\+/g, " "));},
 					q = query_a.search.substring(1),
 					r = /([^&=]+)=?([^&]*)/g;
 
@@ -141,7 +144,7 @@ jQuery( function( $ ) {
 			$results_table.show();
 			if ( ! map_initialized ) {
 				if ( ! init_map() ) {
-					setTimeout( function() { loadJSON( data, text_status ) }, 100 );
+					setTimeout( function() {loadJSON( data, text_status )}, 100 );
 					return false;
 				}
 			}
@@ -152,9 +155,13 @@ jQuery( function( $ ) {
 
 			if ( query.getParameter( 'map_type' ) == 'heat' ) {
 				$map_type_heat.prop( 'checked', true );
+				$heat_parameters.show();
+				$heat_map_resolution_input.val( ( query.getParameter( 'heat_map_resolution') || '200' ) );
 			} else {
 				$map_type_point.prop( 'checked', true );
+				$heat_parameters.hide();
 			}
+			$resolution_button.hide();
 
 			$results_tbody.empty();
 			if ( kml_layer ) {
@@ -170,7 +177,9 @@ jQuery( function( $ ) {
 			} else {
 				
 				if ( query.getParameter( 'map_type' ) == 'heat' ) {
-					kml_url = 'http://geo.lib.purdue.edu/heatmapr/api/geojson/400/classic.kml?surl=' + 
+					kml_url = 'http://geo.lib.purdue.edu/heatmapr/api/geojson/' +
+						( query.getParameter( 'heat_map_resolution' ) || '200' ) +
+						'/classic.kml?surl=' + 
 						encodeURIComponent( query.getHref() );
 				} else {
 					kml_url = query.getHref().replace( 'geojson', 'kml' );
@@ -200,8 +209,8 @@ jQuery( function( $ ) {
 	if ( $stored_kml_url_input.val() ) {
 		query.setHref( $json_query_url_input.val() );
 		$.ajax( {
-			url: $json_query_url_input.val() + '&callback=?',
-			dataType: 'json',
+			url: $json_query_url_input.val(),
+			dataType: 'jsonp',
 			success: loadJSON
 		} ).error( function( request, text_status, error ) {
 			$message_panel.text( error ).show();
@@ -302,6 +311,24 @@ jQuery( function( $ ) {
 			$range_button.show();
 		} else {
 			$year_end_input.val( '' );
+		}
+	} );
+
+	$resolution_button.click( function() {
+		var resolution = parseInt( $heat_map_resolution_input.val() );
+		if ( !isNaN( resolution ) ) {
+			query.setParameter( 'heat_map_resolution', resolution );
+		}
+		query.execute();
+		return false;
+	} );
+	$heat_map_resolution_input.keyup( function( e ) {
+		var valid_parts = $heat_map_resolution_input.val().match( /\d*/ );
+		if ( valid_parts ) {
+			$heat_map_resolution_input.val( valid_parts[0] );
+			$resolution_button.show();
+		} else {
+			$heat_map_resolution_input.val( '' );
 		}
 	} );
 

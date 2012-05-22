@@ -146,6 +146,12 @@ if ( !is_wp_error( $filter_response ) and $filter_response['response']['code'] =
 		<input id="ahmaps_map_type_heat" type="radio" name="ahmaps_map_type" value="heat" /> Heat
 	</p>
 
+	<p class="ahmaps-heat-parameter">
+		<label>Heat Map Resolution</label>
+		<input id="ahmaps_heat_map_resolution" class="no-submit" type="text" name="ahmaps_heat_map_resolution" size="4" value="200" />
+		<button id="ahmaps_resolution_button">Set Resolution</button>
+	</p>
+
 	<div class="submit">
 		<input id="ahmaps_attach_button" name="ahmaps_attach_button" type="submit" value="Attach this data" />
 	</div>
