@@ -94,7 +94,7 @@ if ( !is_wp_error( $filter_response ) and $filter_response['response']['code'] =
 	</div>
 	<div id="ahmaps_results_list" style="max-height: 270px; overflow-y: auto;">
 		<table id="ahmaps_results_table" style="display:none;">
-			<thead><tr><th>Exhibits</th></tr></thead>
+			<thead><tr><th><span class="ahmaps-exhibit-count"></span> Exhibits</th></tr></thead>
 			<tbody></tbody>
 		</table>
 	</div>

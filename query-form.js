@@ -10,6 +10,7 @@ jQuery( function( $ ) {
 		$new_button = $( '#ahmaps_new_button' ),
 		$query_panel = $( '#ahmaps_query_panel' ),
 		$map_panel = $( '#ahmaps_map_panel' ),
+		$exhibit_counts = $( '.ahmaps-exhibit-count' ),
 		$results_table = $( '#ahmaps_results_table' ),
 		$results_tbody = $results_table.children( 'tbody' ),
 		$artist_select = $( '#ahmaps_artist_select' ),
@@ -143,6 +144,7 @@ jQuery( function( $ ) {
 			$query_panel.show();
 			$map_panel.show();
 			$results_table.show();
+			$exhibit_counts.text( data.features.length.toString() );
 			if ( ! map_initialized ) {
 				if ( ! init_map() ) {
 					setTimeout( function() {loadJSON( data, text_status )}, 100 );
