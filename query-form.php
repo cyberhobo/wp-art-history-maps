@@ -5,17 +5,28 @@
  * @package ArtHistoryMaps
  */
 global $post_ID;
+$selected_map_type = 'point';
+$heat_map_ramps = array( 'classic', 'viking', 'sethoscope' );
+$selected_heat_map_ramp = 'classic';
+$selected_heat_map_resolution = '200';
 $json_query_url = '';
 $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 if ( $stored_kml_url ) {
 	if ( strpos( $stored_kml_url, '?surl=' ) ) {
-		 if ( preg_match( '/\?surl=(.*)$/', $stored_kml_url, $matches ) ) {
-			 $json_query_url = urldecode( $matches[1] );
+		 if ( preg_match( '/geojson\/(\d*)\/(\w*)\.kml\?surl=(.*)$/', $stored_kml_url, $matches ) ) {
+			$selected_map_type = 'heat';
+			$selected_heat_map_resolution = $matches[1];
+			$selected_heat_map_ramp = $matches[2];
+			$json_query_url = urldecode( $matches[3] );
 		 }
 	} else {
 		$json_query_url = str_replace( '/kml', '/geojson', $stored_kml_url );
 	}
 }
+// Remove deprecated parameters
+$json_query_url = preg_replace( '/[&?]*map_type=[^&]*/', '', $json_query_url );
+$json_query_url = preg_replace( '/[&?]*heat_map_resolution=[^&]*/', '', $json_query_url );
+$json_query_url = preg_replace( '/[&?]*heat_map_ramp=[^&]*/', '', $json_query_url );
 
 $country_ids = array();
 if ( strpos( $json_query_url, 'countryid' ) ) {
@@ -142,21 +153,22 @@ if ( !is_wp_error( $filter_response ) and $filter_response['response']['code'] =
 		
 	<p>
 		<label>Type of Map</label>
-		<input id="ahmaps_map_type_point" type="radio" name="ahmaps_map_type" value="point" /> Point
-		<input id="ahmaps_map_type_heat" type="radio" name="ahmaps_map_type" value="heat" /> Heat
+		<input id="ahmaps_map_type_point" type="radio" name="ahmaps_map_type" value="point" <?php echo ( $selected_map_type == 'point' ) ? 'checked="checked"' : ''; ?>/> Point
+		<input id="ahmaps_map_type_heat" type="radio" name="ahmaps_map_type" value="heat" <?php echo ( $selected_map_type == 'heat' ) ? 'checked="checked"' : ''; ?>/> Heat
 	</p>
 
 	<p class="ahmaps-heat-parameter">
 		<label>Heat Map Resolution</label>
-		<input id="ahmaps_heat_map_resolution" class="no-submit" type="text" name="ahmaps_heat_map_resolution" size="4" value="200" />
+		<input id="ahmaps_heat_map_resolution" class="no-submit" type="text" name="ahmaps_heat_map_resolution" size="4" value="<?php echo $selected_heat_map_resolution; ?>" />
 		<button id="ahmaps_resolution_button">Set Resolution</button>
 	</p>
 
 	<p class="ahmaps-heat-parameter">
 		<label>Heat Map Color Scheme</label>
-		<input id="ahmaps_heat_map_ramp_classic" type="radio" name="ahmaps_heat_map_ramp" value="classic" /> Classic
-		<input id="ahmaps_heat_map_ramp_viking" type="radio" name="ahmaps_heat_map_ramp" value="viking" /> Viking
-		<input id="ahmaps_heat_map_ramp_sethoscope" type="radio" name="ahmaps_heat_map_ramp" value="sethoscope" /> Sethoscope
+		<?php foreach ( $heat_map_ramps as $heat_map_ramp ) : ?>
+		<input id="ahmaps_heat_map_ramp_<?php echo $heat_map_ramp; ?>" type="radio" name="ahmaps_heat_map_ramp" value="<?php echo $heat_map_ramp; ?>" <?php echo ( $heat_map_ramp == $selected_heat_map_ramp ) ? ' checked="checked"' : ''; ?> /> 
+		<?php echo $heat_map_ramp; ?>
+		<?php endforeach; ?>
 	</p>
 
 	<div class="submit">

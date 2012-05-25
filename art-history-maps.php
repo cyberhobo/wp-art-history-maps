@@ -76,7 +76,6 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 			$link = '';
 			$kml_url = get_post_meta( get_the_ID(), 'ahmaps_kml_url', true );
 			if ( $kml_url ) {
-				$kml_url .= '&amp;ext=.kml';
 				$link = '<a href="' . $kml_url . '">' . $args['text'] . '</a>';
 			}
 			return $link;

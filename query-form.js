@@ -19,13 +19,12 @@ jQuery( function( $ ) {
 		$year_start_input = $( '#ahmaps_year_begin' ),
 		$year_end_input = $( '#ahmaps_year_end' ),
 		$range_button = $( '#ahmaps_range_button' ),
-		$map_type_point = $( '#ahmaps_map_type_point' ),
-		$map_type_heat = $( '#ahmaps_map_type_heat' ),
+		$map_type_radio = $form.find( 'input[name=ahmaps_map_type]' ),
 		$map = $( '#ahmaps_map' ),
 		$attach_button = $( '#ahmaps_attach_button' ),
 		$heat_parameters = $( '.ahmaps-heat-parameter' ),
 		$heat_map_resolution_input = $( '#ahmaps_heat_map_resolution' ),
-		$heat_map_ramp_color = $( '#ahmaps_heat_map_ramp_classic' )
+		$heat_map_ramp_radio = $form.find( 'input[name=ahmaps_heat_map_ramp]'),
 		$resolution_button = $( '#ahmaps_resolution_button' ),
 		map_initialized = false,
 		map = null,
@@ -156,13 +155,9 @@ jQuery( function( $ ) {
 			$year_end_input.val( ( query.getParameter( 'year_end' ) ? query.getParameter( 'year_end' ) : '' ) );
 			$range_button.hide();
 
-			if ( query.getParameter( 'map_type' ) == 'heat' ) {
-				$map_type_heat.prop( 'checked', true );
+			if ( $map_type_radio.filter(':checked').val() == 'heat' ) {
 				$heat_parameters.show();
-				$heat_map_resolution_input.val( ( query.getParameter( 'heat_map_resolution') || '200' ) );
-				$( '#ahmaps_heat_map_ramp_' + ( query.getParameter( 'heat_map_ramp' ) || 'classic' ) ).prop( 'checked', true );
 			} else {
-				$map_type_point.prop( 'checked', true );
 				$heat_parameters.hide();
 			}
 			$resolution_button.hide();
@@ -180,10 +175,10 @@ jQuery( function( $ ) {
 
 			} else {
 				
-				if ( query.getParameter( 'map_type' ) == 'heat' ) {
+				if ( $map_type_radio.filter( ':checked' ).val() == 'heat' ) {
 					kml_url = 'http://geo.lib.purdue.edu/heatmapr/api/geojson/' +
-						( query.getParameter( 'heat_map_resolution' ) || '200' ) + '/' +
-						( query.getParameter( 'heat_map_ramp' ) || 'classic' ) + '.kml?surl=' + 
+						$heat_map_resolution_input.val() + '/' +
+						$heat_map_ramp_radio.filter( ':checked' ).val() + '.kml?surl=' + 
 						encodeURIComponent( query.getHref() );
 				} else {
 					kml_url = query.getHref().replace( 'geojson', 'kml' );
@@ -231,15 +226,9 @@ jQuery( function( $ ) {
 		return false; // don't follow link or propagate
 	} );
 
-	$form.delegate( 'input[name=ahmaps_map_type]', 'change', function() {
-		query.setParameter( 'map_type', $( this ).val() );
-		query.execute();
-	} );
+	$map_type_radio.change( query.execute );
 
-	$form.delegate( 'input[name=ahmaps_heat_map_ramp]', 'change', function() {
-		query.setParameter( 'heat_map_ramp', $( this ).val() );
-		query.execute();
-	})
+	$heat_map_ramp_radio.change( query.execute );
 
 	$( 'input[type=text].no-submit' ).keypress( function( e ) {
 		if ( ( e.keyCode && e.keyCode === 13 ) || ( e.which && e.which === 13 ) ) {
@@ -323,13 +312,10 @@ jQuery( function( $ ) {
 	} );
 
 	$resolution_button.click( function() {
-		var resolution = parseInt( $heat_map_resolution_input.val() );
-		if ( !isNaN( resolution ) ) {
-			query.setParameter( 'heat_map_resolution', resolution );
-		}
-		query.execute();
-		return false;
+		query.execute(); 
+		return false; // Don't submit the form or propagate event
 	} );
+	
 	$heat_map_resolution_input.keyup( function( e ) {
 		var valid_parts = $heat_map_resolution_input.val().match( /\d*/ );
 		if ( valid_parts ) {
