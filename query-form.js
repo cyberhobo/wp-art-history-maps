@@ -23,6 +23,7 @@ jQuery( function( $ ) {
 		$map = $( '#ahmaps_map' ),
 		$attach_button = $( '#ahmaps_attach_button' ),
 		$heat_parameters = $( '.ahmaps-heat-parameter' ),
+		heat_parameters_changed = false,
 		$heat_map_resolution_input = $( '#ahmaps_heat_map_resolution' ),
 		$heat_map_ramp_radio = $form.find( 'input[name=ahmaps_heat_map_ramp]'),
 		$resolution_button = $( '#ahmaps_resolution_button' ),
@@ -198,7 +199,7 @@ jQuery( function( $ ) {
 				} );
 			}
 
-			if ( $json_query_url_input.val() != query.getHref() ) {
+			if ( $json_query_url_input.val() != query.getHref() || heat_parameters_changed ) {
 				$attach_button.show();
 			} else {
 				$attach_button.hide();
@@ -226,9 +227,15 @@ jQuery( function( $ ) {
 		return false; // don't follow link or propagate
 	} );
 
-	$map_type_radio.change( query.execute );
+	$map_type_radio.change( function() {
+		heat_parameters_changed = true;
+		query.execute();
+	} );
 
-	$heat_map_ramp_radio.change( query.execute );
+	$heat_map_ramp_radio.change( function() {
+		heat_parameters_changed = true;
+		query.execute();
+	} );
 
 	$( 'input[type=text].no-submit' ).keypress( function( e ) {
 		if ( ( e.keyCode && e.keyCode === 13 ) || ( e.which && e.which === 13 ) ) {
@@ -312,6 +319,7 @@ jQuery( function( $ ) {
 	} );
 
 	$resolution_button.click( function() {
+		heat_parameters_changed = true;
 		query.execute(); 
 		return false; // Don't submit the form or propagate event
 	} );
