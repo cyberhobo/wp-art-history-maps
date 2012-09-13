@@ -145,7 +145,7 @@ jQuery( function( $ ) {
 					heatMapRamp: heatMapMatches[2]
 				}, { silent: true } );
 
-				this.geoJsonQuery.set( { url: decodeURI( heatMapMatches[3] ) } );
+				this.geoJsonQuery.set( { url: decodeURIComponent( heatMapMatches[3] ) } );
 
 			}
 		},
@@ -191,7 +191,7 @@ jQuery( function( $ ) {
 					fresh_url = ahmapsQueryAppConfig.heatmaprApiBaseUrl +
 						this.get( 'heatMapResolution' ) + '/' +
 						this.get( 'heatMapRamp' ) + '.kml?surl=' +
-						this.geoJsonQuery.get( 'url' );
+						encodeURIComponent( this.geoJsonQuery.get( 'url' ) );
 				
 				}
 
