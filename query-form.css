@@ -1,0 +1,39 @@
+#ahmaps_query_app .busy-indicator {
+	background: url('media/spinner3-greenie.gif') no-repeat center center;
+	height: 45px;
+}
+
+#ahmaps_message, #ahmaps_new_panel {
+	display: none;
+}
+
+#ahmaps_query_app .results-panel {
+	float: right; 
+	width: 49%;
+}
+
+#ahmaps_query_app .map-panel {
+	text-align: center; 
+}
+
+#ahmaps_query_app .map {
+	height: 256px;
+	width: 100%;
+}
+
+#ahmaps_query_app .results-list {
+	max-height: 270px; 
+	overflow-y: auto;
+}
+
+#ahmaps_query_app .results-list table {
+}
+
+#ahmaps_query_app .query-panel {
+	width:49%;
+}
+
+#ahmaps_query_app .submit {
+	clear: both;
+}
+

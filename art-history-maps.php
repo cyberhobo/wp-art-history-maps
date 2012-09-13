@@ -7,7 +7,7 @@
   Version: 1.0.4
   Author: Dylan Kuhn
   Author URI: http://www.cyberhobo.net/
-  Minimum WordPress Version Required: 3.0
+  Minimum WordPress Version Required: 3.1
  */
 
 /*
@@ -37,6 +37,7 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 		static $basename;
 		static $version;
 		static $api_base_url = 'http://geodev.lib.purdue.edu/dossin/api/';
+		static $heatmapr_api_base_url = 'http://geodev.lib.purdue.edu/heatmapr/api/geojson/';
 
 		static function load() {
 
@@ -86,30 +87,21 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 			if ( 'revision' == $post->post_type )
 				return;
 
-			if ( empty( $_POST['ahmaps_json_query_url'] ) || empty( $_POST['ahmaps_attach_button'] ) ) {
+			if ( empty( $_POST['ahmaps_stored_kml_url'] ) || empty( $_POST['ahmaps_attach_button'] ) ) {
 				// Don't do anything without a query URL or when other submit buttons are used
 				return;
 			}
 
 			wp_verify_nonce( 'ahmaps_nonce' );
 
-			if ( 'heat' == $_POST['ahmaps_map_type'] ) {
-				$new_kml_url = 'http://geo.lib.purdue.edu/heatmapr/api/geojson/' .
-					$_POST['ahmaps_heat_map_resolution'] . '/' .
-					$_POST['ahmaps_heat_map_ramp'] .
-					'.kml?surl=' . 
-					urlencode( $_POST['ahmaps_json_query_url'] );
-			} else {
-				$new_kml_url = str_replace( '/geojson', '/kml', $_POST['ahmaps_json_query_url'] );
-			}
 			$saved_kml_url = get_post_meta( $post_id, 'ahmaps_kml_url', true );
 
-			if ( $new_kml_url == $saved_kml_url ) {
+			if ( $_POST['ahmaps_stored_kml_url'] == $saved_kml_url ) {
 				// Cached data is still good, nothing to do
 				return;
 			}
 
-			update_post_meta( $post_id, 'ahmaps_kml_url', $new_kml_url );
+			update_post_meta( $post_id, 'ahmaps_kml_url', $_POST['ahmaps_stored_kml_url'] );
 
 			if ( class_exists( 'GeoMashupDB' ) ) {
 				if ( isset( $_POST['ahmaps_center_lat'] ) and isset( $_POST['ahmaps_center_lng'] ) ) {
@@ -158,19 +150,42 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 
 				// Enqueue query form resources
 				wp_enqueue_script( 'google-maps-2' );
-				wp_enqueue_script( 'ahmaps-query-form', path_join( self::$url_path, "query-form.js" ), array( 'jquery' ), self::$version, true );
 
-				// Add the meta box for all relevant post types
-				if ( function_exists( 'get_post_types' ) ) {
-					$post_types = get_post_types( array( ), 'objects' );
-					foreach ( $post_types as $post_type ) {
-						if ( !isset( $post_type->show_ui ) or $post_type->show_ui ) {
-							add_meta_box( 'ahmaps_post_edit', __( 'Art History Query', 'ArtHistoryMaps' ), array( __CLASS__, 'print_form' ), $post_type->name, 'advanced' );
-						}
-					}
+				wp_enqueue_script( 'jquery-ui-tabs' );
+				if ( class_exists( 'GeoMashupUIManager' ) ) {
+					GeoMashupUIManager::enqueue_jquery_styles();
 				} else {
-					add_meta_box( 'ahmaps_post_edit', __( 'Open Context Query', 'ArtHistoryMaps' ), array( __CLASS__, 'print_form' ), 'post', 'advanced' );
-					add_meta_box( 'ahmaps_post_edit', __( 'Open Context Query', 'ArtHistoryMaps' ), array( __CLASS__, 'print_form' ), 'page', 'advanced' );
+					wp_enqueue_style( 
+						'jquery-ui-lightness',
+						'http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.21/themes/ui-lightness/jquery-ui.css',
+						false,
+						'1.8.21' 
+					);
+				}
+
+				if ( !wp_script_is( 'underscore' ) ) 
+					wp_register_script( 'underscore', path_join( self::$url_path, 'underscore-min.js' ), array(), '1.3.3', $in_footer = true );
+				wp_enqueue_script( 'underscore' );
+
+				if ( !wp_script_is( 'backbone' ) ) 
+					wp_register_script( 'backbone', path_join( self::$url_path, 'backbone-min.js' ), array( 'underscore', 'jquery' ), '0.9.2', $in_footer = true );
+				wp_enqueue_script( 'backbone' );
+
+				wp_enqueue_script( 'google-maps-2' );
+				wp_enqueue_script( 'ahmaps-query-app', path_join( self::$url_path, 'query-form.js' ), array( 'backbone', 'jquery-ui-tabs' ), self::$version, true );
+				wp_enqueue_style( 'ahmaps-query-app', path_join( self::$url_path, 'query-form.css' ), array(), self::$version );
+				$app_config = array( 
+					'apiBaseUrl' => self::$api_base_url, 
+					'heatmaprApiBaseUrl' => self::$heatmapr_api_base_url,
+					'noResultsMessage' => __( 'No results found.', 'ArtHistoryMaps' )
+				);
+				wp_localize_script( 'ahmaps-query-app', 'ahmapsQueryAppConfig', $app_config );
+
+				$post_types = get_post_types( array( ), 'objects' );
+				foreach ( $post_types as $post_type ) {
+					if ( !isset( $post_type->show_ui ) or $post_type->show_ui ) {
+						add_meta_box( 'ahmaps_post_edit', __( 'Art History Query', 'ArtHistoryMaps' ), array( __CLASS__, 'print_form' ), $post_type->name, 'advanced' );
+					}
 				}
 			}
 		}
