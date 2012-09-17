@@ -380,7 +380,7 @@ jQuery( function( $ ) {
 		},
 
 		render: function() {
-			var selectedStyles = []; 
+			var selectedStyles = [], copyUrl = ''; 
 			
 			// Set UI elements to current query values
 
@@ -420,7 +420,12 @@ jQuery( function( $ ) {
 
 			this.$exhibitCount.text( this.featureCollection.length );
 
-			this.$kmlUrlInput.val( this.model.get( 'url' ) );
+			copyUrl = this.model.get( 'url' ); 
+			if ( 'heat' !== this.model.get( 'mapType' ) ) {
+				// Add a fake file extension parameter for KML file detectors
+				copyUrl += '&ext=.kml';
+			}
+			this.$kmlUrlInput.val( copyUrl );
 
 			return this;
 		},
