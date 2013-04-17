@@ -28,7 +28,7 @@
 if ( !class_exists( 'ArtHistoryMaps' ) ) {
 
 	/**
-	 * The GPX Viewer singleton class
+	 * A static class
 	 */
 	class ArtHistoryMaps {
 
