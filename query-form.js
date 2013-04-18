@@ -1,9 +1,10 @@
-/**global ahmapsQueryAppConfig, jQuery, google.maps.Map2 */
+var ahmapsQueryAppConfig, jQuery, OpenLayers;
+
 /*
  * Use backbone.js to create an user interface for building queries against
  * the art history data served from ahmapsQueryAppConfig.base_api_url.
  * 
- * The server can produce both GeoJSON and KML results. In general both 
+ * The server can produce both GeoJSON and KML results.
  * take the same parameters, except for the case of heat map KML queries, which 
  * embed a standard query URL into a larger URL with a few addtional parameters.
  * The UI will ultimately produce a KML URL of either type based on a GeoJSON 
@@ -18,7 +19,7 @@ jQuery( function( $ ) {
 	var Feature = Backbone.Model.extend( {
 
 		parse: function( response ) {
-			return response.properties;
+			return _.extend( response.properties, response.geometry );
 		}
 
 	} );
@@ -234,8 +235,23 @@ jQuery( function( $ ) {
 			this.$queryPanel = this.$( '.query-panel' );
 			this.$resultsPanel = this.$( '.results-panel' );
 			this.$map = this.$( '.map' );
-			this.map = new google.maps.Map2( this.$map.get( 0 ) );
-			this.map.setCenter( new google.maps.LatLng( 0, 0 ), 1, G_PHYSICAL_MAP );
+			this.map = new OpenLayers.Map(
+				this.$map.get( 0 ),
+				{
+					maxExtent: new OpenLayers.Bounds(-20037508.34,-20037508.34,20037508.34,20037508.34),
+					maxResolution: 156543,
+					numZoomLevels: 18,
+					units: 'm',
+					projection: 'EPSG:900913'
+				}
+			);
+			this.map.addLayer( new OpenLayers.Layer.OSM() );
+			this.icon = new OpenLayers.Icon(
+				'http://www.openlayers.org/dev/img/marker.png',
+			    new OpenLayers.Size( 11, 13 ),
+			    new OpenLayers.Pixel( -5, -13 )
+			);
+			this.map.setCenter( new OpenLayers.LonLat( 0, 0 ), 1 );
 			this.$resultsList = this.$( '.results-list' );
 			this.$resultsTBody = this.$resultsList.find( 'tbody' );
 			this.$exhibitCount = this.$( '.exhibit-count' );
@@ -436,7 +452,6 @@ jQuery( function( $ ) {
 		},
 
 		addFeatures: function() {
-			var queryView = this;
 
 			this.render();
 
@@ -445,35 +460,63 @@ jQuery( function( $ ) {
 			this.featureCollection.each( this.addFeature, this );
 
 			if ( this.kmlLayer ) {
-				this.map.removeOverlay( this.kmlLayer );
+				this.map.removeLayer( this.kmlLayer );
 			}
 
 			if ( 0 === this.featureCollection.length ) {
 
 				this.kmlLayer = null;
-				this.map.setCenter( new google.maps.LatLng( 0, 0 ), 1 );
+				this.map.setCenter( new OpenLayers.LonLat( 0, 0 ), 1 );
 				this.trigger( 'noResultsFound' );
 
 			} else {
 
-				this.kmlLayer = new google.maps.GeoXml( this.model.get( 'url' ) );
-				this.map.addOverlay( this.kmlLayer );	
-				google.maps.Event.addListener( this.kmlLayer, 'load', function() {
-					queryView.kmlLayer.gotoDefaultViewport( queryView.map );  
-					queryView.trigger( 'newCenter', queryView.kmlLayer.getDefaultCenter() );
-				} );
+				if ( this.markerLayer ) {
+					this.markerLayer.destroy();
+				}
+				this.markerLayer = new OpenLayers.Layer.Markers( 'Markers' );
+				this.map.addLayer( this.markerLayer );
+				this.markerExtent = new OpenLayers.Bounds();
+				this.featureCollection.each( function( feature ) {
+					var lonlat = new OpenLayers.LonLat( feature.get( 'coordinates' )[0], feature.get( 'coordinates' )[1] )
+						.transform( new OpenLayers.Projection( 'EPSG:4326' ), this.map.getProjectionObject() ),
+						marker = new OpenLayers.Marker( lonlat, this.icon.clone() );
+					this.markerLayer.addMarker( marker );
+					this.markerExtent.extend( lonlat );
+				}, this );
+				this.map.zoomToExtent( this.markerExtent );
 
+				/* OpenLayers can't load remote data
+				this.kmlLayer = new OpenLayers.Layer.Vector( 'KML', {
+					strategies: [new OpenLayers.Strategy.Fixed()],
+					protocol: new OpenLayers.Protocol.HTTP({
+						url: this.model.get( 'url' ),
+						format: new OpenLayers.Format.KML({
+								extractStyles: true,
+								extractAttributes: true,
+								maxDepth: 2
+						})
+				   })
+				});
+				if ( this.map.addLayer( this.kmlLayer ) ) {
+					this.map.zoomToExtent( this.kmlLayer.getExtent() );
+					this.trigger( 'newCenter', this.kmlLayer.getExtent().getCenterLonLat() );
+				}
+				*/
 			}
 		},
 
 		fetch: function() {
+			var queryView = this;
+
 			this.trigger( 'fetch' );
 
 			this.featureCollection.url = this.model.geoJsonQuery.get( 'url' );
 
 			return this.featureCollection.fetch( {
 				context: this,
-				dataType: 'jsonp'
+				dataType: 'jsonp',
+				reset: true
 			} ).error( this.fetchError );
 		}
 
@@ -546,10 +589,10 @@ jQuery( function( $ ) {
 			this.$primaryKmlUrlInput.val( this.queryViews[0].model.get( 'url' ) );
 		}, 
 
-		newCenter: function( centerLatLng ) {
-			if ( centerLatLng ) {
-				this.$centerLatInput.val( centerLatLng.lat() );
-				this.$centerLngInput.val( centerLatLng.lng() );
+		newCenter: function( centerLonLat ) {
+			if ( centerLonLat ) {
+				this.$centerLatInput.val( centerLonLat.lat );
+				this.$centerLngInput.val( centerLonLat.lon );
 			}
 		}, 
 			

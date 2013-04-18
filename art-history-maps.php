@@ -149,7 +149,8 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 			if ( 'post-new.php' == $pagenow or ( 'post.php' == $pagenow and isset( $_GET['action'] ) and 'edit' == $_GET['action'] ) ) {
 
 				// Enqueue query form resources
-				wp_enqueue_script( 'google-maps-2' );
+				wp_enqueue_script( 'openlayers', 'http://openlayers.org/api/OpenLayers.js' );
+				wp_enqueue_script( 'openstreetmap', 'http://www.openstreetmap.org/openlayers/OpenStreetMap.js', array( 'openlayers' ) );
 
 				wp_enqueue_script( 'jquery-ui-tabs' );
 				if ( class_exists( 'GeoMashupUIManager' ) ) {
@@ -171,7 +172,6 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 					wp_register_script( 'backbone', path_join( self::$url_path, 'backbone-min.js' ), array( 'underscore', 'jquery' ), '0.9.2', $in_footer = true );
 				wp_enqueue_script( 'backbone' );
 
-				wp_enqueue_script( 'google-maps-2' );
 				wp_enqueue_script( 'ahmaps-query-app', path_join( self::$url_path, 'query-form.js' ), array( 'backbone', 'jquery-ui-tabs' ), self::$version, true );
 				wp_enqueue_style( 'ahmaps-query-app', path_join( self::$url_path, 'query-form.css' ), array(), self::$version );
 				$app_config = array( 
