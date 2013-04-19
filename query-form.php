@@ -5,24 +5,12 @@
  * @package ArtHistoryMaps
  */
 global $post_ID;
-$selected_map_type = 'point';
-$heat_map_ramps = array( 'classic', 'viking', 'sethoscope' );
-$selected_heat_map_ramp = 'classic';
-$selected_heat_map_resolution = '200';
 $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 $more_kml_urls = get_post_meta( $post_ID, 'ahmaps_more_kml_url' );
 
 if( !class_exists( 'WP_Http' ) )
 	include_once( ABSPATH . WPINC. '/class-http.php' );
 $http = new WP_Http();
-
-$artist_response = $http->get( 'http://geodev.lib.purdue.edu/dossin/api/artists/json' );
-$artists = array();
-if ( !is_wp_error( $artist_response ) and $artist_response['response']['code'] == '200' ) {
-	$body = json_decode( $artist_response['body'] );
-	if ( count( $body->results[0] ) > 0 ) 
-		$artists = $body->results[0];
-}
 
 $country_response = $http->get( 'http://geodev.lib.purdue.edu/dossin/api/countries/json' );
 $countries = array();
@@ -31,17 +19,6 @@ if ( !is_wp_error( $country_response ) and $country_response['response']['code']
 	if ( count( $body->results[0] ) > 0 ) {
 		$countries = $body->results[0];
 		usort( $countries, create_function( '$a,$b', 'if ( $a->name == $b->name ) return 0; else return ( $a->name < $b->name ) ? -1 : 1;' ) );
-	}
-}
-
-$filter_response = $http->get( 'http://geodev.lib.purdue.edu/dossin/api/filters/exhibitions/json' );
-$filters = array();
-$selected_filters = array();
-if ( !is_wp_error( $filter_response ) and $filter_response['response']['code'] == '200' ) {
-	$body = json_decode( $filter_response['body'] );
-	foreach ( $body->results[0] as $filter ) {
-		if ( strpos( $filter->desc, 'classified' ) )
-			$filters[] = $filter;
 	}
 }
 
@@ -98,13 +75,8 @@ if ( !is_wp_error( $filter_response ) and $filter_response['response']['code'] =
 	<div class="query-summary"></div>
 
 	<p>
-		<label>Artist</label>
-		<select class="artists filter-select" size="7" multiple="true">
-			<option value="any">any</option>
-			<?php foreach( $artists as $artist ) : ?>
-			<option value="<?php echo $artist->id; ?>"><?php echo $artist->name; ?></option>
-			<?php endforeach; ?>
-		</select>
+		<label>Exhibitor</label>
+		<input class="exhibitor no-submit" size="25" type="text" />
 	</p>
 	
 	<p>
@@ -122,36 +94,6 @@ if ( !is_wp_error( $filter_response ) and $filter_response['response']['code'] =
 			<option value="<?php echo $country->id; ?>"><?php echo $country->name . ' (' . $country->iso . ')'; ?></option>
 			<?php endforeach; ?>
 		</select>
-	</p>
-
-	<p>
-		<label>Style</label>
-		<select class="styles filter-select" size="7" multiple="true">
-			<option value="any">any</option>
-			<?php foreach( $filters as $filter ) : ?>
-			<option><?php echo $filter->attname; ?></option>
-			<?php endforeach; ?>
-		</select>
-	</p>
-		
-	<p>
-		<label>Type of Map</label>
-		<input class="map-type" type="radio" name="<%= cid %>_map_type" value="point" /> Point
-		<input class="map-type" type="radio" name="<%= cid %>_map_type" value="heat" /> Heat
-	</p>
-
-	<p class="heat-parameter">
-		<label>Heat Map Resolution</label>
-		<input class="heat-map-resolution no-submit" type="text" size="4" />
-		<button class="heat-map-resolution">Set Resolution</button>
-	</p>
-
-	<p class="heat-parameter">
-		<label>Heat Map Color Scheme</label>
-		<?php foreach ( $heat_map_ramps as $heat_map_ramp ) : ?>
-		<input class="heat-map-ramp" type="radio" name="<%= cid %>_heat_map_ramp" value="<?php echo $heat_map_ramp; ?>" /> 
-		<?php echo $heat_map_ramp; ?>
-		<?php endforeach; ?>
 	</p>
 
 	<p>

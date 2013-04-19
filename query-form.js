@@ -3,14 +3,10 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 /*
  * Use backbone.js to create an user interface for building queries against
  * the art history data served from ahmapsQueryAppConfig.base_api_url.
- * 
- * The server can produce both GeoJSON and KML results.
- * take the same parameters, except for the case of heat map KML queries, which 
- * embed a standard query URL into a larger URL with a few addtional parameters.
- * The UI will ultimately produce a KML URL of either type based on a GeoJSON 
- * sub-query.
  */
-jQuery( function( $ ) { 
+
+(function( $ ) {
+
 
 	/*
 	 * The basic unit of data returned by a GeoJSON query.
@@ -35,7 +31,7 @@ jQuery( function( $ ) {
 		parse: function( response ) {
 			return response.features;
 		}
-		
+
 	} );
 
 	/*
@@ -255,19 +251,11 @@ jQuery( function( $ ) {
 			this.$resultsList = this.$( '.results-list' );
 			this.$resultsTBody = this.$resultsList.find( 'tbody' );
 			this.$exhibitCount = this.$( '.exhibit-count' );
-			this.$artistSelect = this.$( 'select.artists' );
+			this.$exhibitorInput = this.$( 'input.exhibitor' );
 			this.$countrySelect = this.$( 'select.countries' );
-			this.$styleSelect = this.$( 'select.styles' );
 			this.$yearStartInput = this.$( 'input.year-start' );
 			this.$yearEndInput = this.$( 'input.year-end' );
 			this.$rangeButton  = this.$( 'button.range-button' );
-			this.$mapTypeRadios = this.$( 'input.map-type' );
-			this.$mapTypePointRadio = this.$( 'input.map-type[value="point"]' );
-			this.$mapTypeHeatRadio = this.$( 'input.map-type[value="heat"]' );
-			this.$heatParameters = this.$( '.heat-parameter' );
-			this.$resolutionInput = this.$( 'input.heat-map-resolution' );
-			this.$resolutionButton = this.$( 'button.heat-map-resolution' );
-			this.$heatRampRadios = this.$( 'input.heat-map-ramp' );
 			this.$kmlUrlInput = this.$( 'input.kml-url' )
 				.focus( function() { $(this).select(); } )
 				.keypress( function( e ) { e.preventDefault(); } )
@@ -289,32 +277,17 @@ jQuery( function( $ ) {
 		},
 
 		events: {
-			'change input.map-type': 'selectMapType',
 			'keypress input:text.no-submit': 'swallowEnterKey',
-			'change select.artists': 'selectArtists',
+			'keyup input.exhibitor': 'acceptExhibitor',
 			'change select.countries': 'selectCountries',
-			'change select.styles': 'selectStyles',
 			'keyup input.year-start': 'acceptYear',
 			'keyup input.year-end': 'acceptYear',
-			'click button.range-button': 'setRange',
-			'keyup input.heat-map-resolution': 'acceptResolution',
-			'click button.heat-map-resolution': 'setResolution',
-			'change input.heat-map-ramp': 'setRamp'
+			'click button.range-button': 'setRange'
 		},
 
-		selectMapType: function() {
-			this.model.set( 'mapType', this.$mapTypeRadios.filter( ':checked' ).val() );
-		},
-
-		selectArtists: function() {
-			if ( this.$artistSelect.val().join('').indexOf( 'any' ) >= 0 ) {
-				this.model.geoJsonQuery.unset( 'artistid' );
-				this.$artistSelect.val( ['any'] );
-			} else {
-				this.model.geoJsonQuery.set( {
-					artistid: this.$artistSelect.val().join( ',' ) 
-				} );
-			}
+		acceptExhibitor: function( e ) {
+			var $input = $( e.currentTarget );
+			console.log( $input.val() );
 		},
 
 		selectCountries: function() {
@@ -326,24 +299,6 @@ jQuery( function( $ ) {
 					countryid: this.$countrySelect.val().join( ',' ) 
 				} );
 			}
-		},
-
-		selectStyles: function() {
-			var geoJsonQuery = this.model.geoJsonQuery;
-			
-			// We may change multiple parameters - 
-			// update silently and trigger change when done
-			this.$styleSelect.children( 'option' ).each( function() {
-				geoJsonQuery.unset( $(this).attr( 'value' ), { silent: true } );
-			} );	
-			if ( this.$styleSelect.val().join('').indexOf( 'any' ) >= 0 ) {
-				this.$styleSelect.val( ['any'] );
-			} else {
-				_.each( this.$styleSelect.val(), function( value ) {
-					geoJsonQuery.set( value, '1', { silent: true } );
-				} );
-			}
-			geoJsonQuery.change();
 		},
 
 		swallowEnterKey: function( e ) {
@@ -373,74 +328,21 @@ jQuery( function( $ ) {
 			} );
 		},
 
-		acceptResolution: function( e ) {
-			var $input = $( e.currentTarget ),
-				valid_parts = $input.val().match( /\d*/ );
-
-			if ( valid_parts ) {
-				$input.val( valid_parts[0] );
-				this.$resolutionButton.show();
-			} else {
-				$input.val( '' );
-			}
-		},
-
-		setResolution: function( e ) {
-			// Button event - don't submit the form
-			e.preventDefault();
-			this.model.set( 'heatMapResolution', this.$resolutionInput.val() );
-		},
-
-		setRamp: function( e ) {
-			this.model.set( 'heatMapRamp', this.$heatRampRadios.filter( ':checked' ).val() );
-		},
-
 		render: function() {
-			var selectedStyles = [], copyUrl = ''; 
+			var copyUrl = '';
 			
 			// Set UI elements to current query values
 
-			this.$artistSelect.val( ( this.model.geoJsonQuery.get( 'artistid' ) || 'any' ).split( ',' ) );
+			this.$exhibitorInput.val( ( this.model.geoJsonQuery.get( 'artistid' ) || '' ).split( ',' ) );
 			this.$countrySelect.val( ( this.model.geoJsonQuery.get( 'countryid' ) || 'any' ).split( ',' ) );
 
-			// Each selected style is a separate parameter
-			this.$styleSelect.val( [] );
-			_.each( this.$styleSelect.children(), function( option ) {
-				var $option = $( option );
-				if ( this.model.geoJsonQuery.has( $option.val() ) ) {
-					selectedStyles.push( $option.val() );
-				}
-			}, this );
-			if ( selectedStyles.length === 0 ) {
-				selectedStyles = [ 'any' ];
-			}
-			this.$styleSelect.val( selectedStyles );
-			
 			this.$yearStartInput.val( this.model.geoJsonQuery.get( 'year_start' ) );
 			this.$yearEndInput.val( this.model.geoJsonQuery.get( 'year_end' ) );
 			this.$rangeButton.hide();
 			
-			if ( 'heat' === this.model.get( 'mapType' ) ) {
-				this.$mapTypeHeatRadio.prop( 'checked', true );
-				this.$heatParameters.show();
-			} else {
-				this.$mapTypePointRadio.prop( 'checked', true );
-				this.$heatParameters.hide();
-			}
-			
-			this.$resolutionInput.val( this.model.get( 'heatMapResolution' ) );
-			this.$resolutionButton.hide();
-
-			this.$heatRampRadios.filter( '[value="' + this.model.get( 'heatMapRamp' ) + '"]' )
-				.prop( 'checked', true );
-
 			this.$exhibitCount.text( this.featureCollection.length );
 
 			copyUrl = this.model.get( 'url' ); 
-			if ( 'heat' !== this.model.get( 'mapType' ) ) {
-				// Add a fake file extension parameter for KML file detectors
-				copyUrl += '&ext=.kml';
-			}
 			this.$kmlUrlInput.val( copyUrl );
 
 			return this;
@@ -507,8 +409,6 @@ jQuery( function( $ ) {
 		},
 
 		fetch: function() {
-			var queryView = this;
-
 			this.trigger( 'fetch' );
 
 			this.featureCollection.url = this.model.geoJsonQuery.get( 'url' );
@@ -617,9 +517,13 @@ jQuery( function( $ ) {
 
 	} );
 
-	var ahmapsQueryApp = new AppView();
+	// init on DOM ready
+	$( function() {
+		var ahmapsQueryApp = new AppView();
 
-	// Might others need to reference our app?
-	ahmapsQueryApp.$el.data( 'ahmapsQueryApp', ahmapsQueryApp );
-		
-} ); 
+		// Might others need to reference our app?
+		ahmapsQueryApp.$el.data( 'ahmapsQueryApp', ahmapsQueryApp );
+
+	} );
+
+}( jQuery ));

@@ -37,3 +37,6 @@
 	clear: both;
 }
 
+#ahmaps_query_tabs {
+    overflow: hidden;
+}
