@@ -36,8 +36,7 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 		static $url_path;
 		static $basename;
 		static $version;
-		static $api_base_url = 'http://geodev.lib.purdue.edu/dossin/api/';
-		static $heatmapr_api_base_url = 'http://geodev.lib.purdue.edu/heatmapr/api/geojson/';
+		static $api_base_url = 'http://maps.lib.purdue.edu:6080/arcgis/rest/services/LiberalArt/AmericanArts/MapServer/';
 
 		static function load() {
 
@@ -176,7 +175,6 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 				wp_enqueue_style( 'ahmaps-query-app', path_join( self::$url_path, 'query-form.css' ), array(), self::$version );
 				$app_config = array( 
 					'apiBaseUrl' => self::$api_base_url, 
-					'heatmaprApiBaseUrl' => self::$heatmapr_api_base_url,
 					'noResultsMessage' => __( 'No results found.', 'ArtHistoryMaps' )
 				);
 				wp_localize_script( 'ahmaps-query-app', 'ahmapsQueryAppConfig', $app_config );

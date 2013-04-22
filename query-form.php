@@ -104,5 +104,5 @@ if ( !is_wp_error( $country_response ) and $country_response['response']['code']
 </script>
 
 <script type="text/template" id="ahmaps_feature_template">
-<td><%- exhib_name %></td>
+<td><%- titre %></td>
 </script>

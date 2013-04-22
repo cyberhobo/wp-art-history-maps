@@ -15,7 +15,15 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 	var Feature = Backbone.Model.extend( {
 
 		parse: function( response ) {
-			return _.extend( response.properties, response.geometry );
+			var fields = {};
+			_.each( response.attributes, function( value, name ) {
+				var names = name.split( '.' ),
+					name = names.pop();
+				if ( 'id' !== name ) {
+					fields[ name ] = value;
+				}
+			});
+			return _.extend( fields, response.geometry );
 		}
 
 	} );
@@ -34,63 +42,103 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 	} );
 
-	/*
-	 * Model a geojson query, rather than the data it returns.
-	 *
-	 * Abusing a backbone model to compile a GeoJSON query URL
-	 * from arguments, or parse an URL into arguments.
-	 * Attributes of a GeoJsonQuery correspond to URL parameters,
-	 * which are named with underscores (e.g. year_start).
+	/**
+	 * Manage an artlas gis query.
+	 * @param data
+	 * @constructor
 	 */
-	var GeoJsonQuery = Backbone.Model.extend( {
-		
-		initialize: function() {
-			this.on( 'change', this.compile, this );
+	var ArtlasQuery = function( data ) {
+		this.clauseRegexp = /([^\s<>=]+)\s*(LIKE|IN|[<>=]+)\s*([^\s]+)/i,
+		this.parameters = {};
+		this.wheres = {};
+		this.url = '';
+
+		if ( typeof data === 'object' ) {
+			this.parameters = data;
+			this.compile();
+		} else if ( typeof data == 'string' ) {
+			this.setUrl( data );
+		}
+
+	};
+
+	_.extend( ArtlasQuery.prototype, Backbone.Events, {
+
+		getUrl: function() {
+			return this.url;
 		},
 
-		parseUrl: function() {
-			var url = this.get( 'url' ),
+		setUrl: function( url ) {
+			this.url = url;
+			this.parse();
+			return this;
+		},
+
+		getWhereValue: function( field, operator ) {
+			return this.wheres[ field + ' ' + operator ];
+		},
+
+		setWhere: function( clause ) {
+			var matches;
+
+			if ( this.clauseRegex.exec( clause ) ) {
+				this.wheres[ matches[1] + ' ' + matches[2] ] = matches[3];
+			}
+			this.compile();
+			return this;
+		},
+
+		removeWhere: function( field, operator ) {
+			delete this.wheres[ field + ' ' + operator ];
+		},
+
+		indexWheres: function() {
+			var andRegexp = /\s+AND\s+/i,
+				clauses;
+
+			this.wheres = {};
+			if ( 'where' in this.parameters ) {
+				clauses = this.parameters.where.split( andRegexp );
+				_.each( clauses, function( clause ) {
+					var matches;
+					if ( matches = this.clauseRegexp.exec( clause ) ) {
+						this.wheres[ matches[1] + ' ' + matches[2] ] = matches[3];
+					}
+				}, this );
+			}
+		},
+
+		parse: function() {
+			var url = this.url,
 				a = $( '<a></a>' ).attr( 'href', url ).get( 0 ),
 				querystring = a.search.slice( 1 ),
 				decode = function( s ) { return decodeURIComponent( s.replace(/\+/g, ' ' ) ); },
 				paramRegexp = /([^&=]+)=?([^&]*)/g,
-				params = {},
 				matches;
 
+			this.parameters = {};
 			while( matches = paramRegexp.exec( querystring ) ) {
-				params[ decode( matches[1] ) ] = decode( matches[2] );
+				this.parameters[ decode( matches[1] ) ] = decode( matches[2] );
 			}
-		
-			this.set( params, { silent: true } );
 
-		}, 
+			this.indexWheres();
+
+			this.trigger( 'parse', this );
+		},
 
 		compile: function() {
-			var url = this.get( 'url' ), 
+			var url = this.url,
 				a = $( '<a></a>' ).attr( 'href', url ).get( 0 );
 
-			if ( this.hasChanged( 'url' ) ) {
-				if ( this.compiling ) {
-					// The URL has been built, done compiling
-					this.compiling = false;
-				} else {
-					// Parsing is silent, will not trigger another compile
-					this.parseUrl();
-				}
-				return;
+			// Build the URL from elements
+			if ( this.wheres.length === 0 ) {
+				delete this.parameters.where;
+			} else {
+				this.parameters.where = this.wheres.join( ' AND ' );
 			}
 
-			// Build the URL from attributes
-
-			this.compiling = true;
-
 			a.search = '';
-			_.each( this.attributes, function( value, name ) {
-
-				if ( 'url' === name ) {
-					// This is what we're building
-					return;
-				}
+			_.each( this.parameters, function( value, name ) {
 
 				if ( a.search ) {
 					a.search += '&';
@@ -101,102 +149,11 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 				a.search += name + '=' + encodeURIComponent( value );
 			} );
 
-			this.set( 'url', a.href );
+			this.url = a.href;
+			this.trigger( 'compile', this );
 		}
 
-	} );
-
-	/*
-	 * Model a kml query, rather than the data it returns.
-	 *
-	 * Abusing a backbone model to compile a KML query URL
-	 * from arguments, or parse an URL into arguments.
-	 * Includes a GeoJsonQuery's attributes and some 
-	 * extras for heat maps.
-	 */
-	var KmlQuery = Backbone.Model.extend( {
-		
-		defaults: {
-			mapType: 'point',
-			heatMapRamp: 'classic',
-			heatMapResolution: '200'
-		}, 
-
-		initialize: function() {
-			this.geoJsonQuery = new GeoJsonQuery();
-			this.geoJsonQuery.on( 'change', this.compile, this );
-			this.on( 'change', this.compile, this );
-			if ( this.get( 'url' ) ) {
-				this.parseUrl();
-			}
-		},
-
-		parseHeatMapUrl: function( heatMapUrl ) {
-			var heatMapMatches = /geojson\/(\d*)\/(\w*)\.kml\?surl=(.*)$/.exec( heatMapUrl );
-
-			if ( heatMapMatches && heatMapMatches.length === 4 ) {
-
-				this.set( {
-					mapType: 'heat',
-					heatMapResolution: heatMapMatches[1],
-					heatMapRamp: heatMapMatches[2]
-				}, { silent: true } );
-
-				this.geoJsonQuery.set( { url: decodeURIComponent( heatMapMatches[3] ) } );
-
-			}
-		},
-
-		parseUrl: function() {
-			var url = this.get( 'url' );
-			
-			if ( url.indexOf( '?surl' ) >= 0 ) {
-				this.parseHeatMapUrl( url );
-			} else {
-
-				this.set( {
-					mapType: 'point'
-				}, { silent: true } );
-
-				this.geoJsonQuery.set( { url: url.replace( '/kml', '/geojson' ) } );
-
-			}
-		},
-
-		compile: function() {
-			var fresh_url;
-
-			if ( this.hasChanged( 'url' ) ) {
-
-				if ( this.compiling ) {
-					this.compiling = false;
-				} else { 
-					this.compiling = true;
-					this.parseUrl();
-				}
-
-			} else {
-
-				this.compiling = true;
-
-				if ( 'point' === this.get( 'mapType' ) ) {
-					
-					fresh_url = this.geoJsonQuery.get( 'url' ).replace( '/geojson', '/kml' );
-
-				} else { /* it's a heat map */
-
-					fresh_url = ahmapsQueryAppConfig.heatmaprApiBaseUrl +
-						this.get( 'heatMapResolution' ) + '/' +
-						this.get( 'heatMapRamp' ) + '.kml?surl=' +
-						encodeURIComponent( this.geoJsonQuery.get( 'url' ) );
-				
-				}
-
-				this.set( 'url', fresh_url );
-			}
-		}
-		
-	} );
+	});
 
 	/*
 	 * Table row view of a feature.
@@ -261,7 +218,8 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 				.keypress( function( e ) { e.preventDefault(); } )
 				.mouseup( function( e ) { e.preventDefault(); } )
 
-			this.model.on( 'change', this.fetch, this );
+			this.query = options.query;
+			this.query.on( 'compile', this.fetch, this );
 
 			this.featureCollection = new FeatureCollection();
 			this.featureCollection.on( 'add', this.addFeature, this );
@@ -292,12 +250,10 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 		selectCountries: function() {
 			if ( this.$countrySelect.val().join('').indexOf( 'any' ) >= 0 ) {
-				this.model.geoJsonQuery.unset( 'countryid' );
+				this.artlasQuery.removeWhere( 'artlas.artlas.pays.id', '=' );
 				this.$countrySelect.val( ['any'] );
 			} else {
-				this.model.geoJsonQuery.set( {
-					countryid: this.$countrySelect.val().join( ',' ) 
-				} );
+				this.artlasQuery.setWhere( 'artlas.artlas.pays.id = ' + this.$countrySelect.val() );
 			}
 		},
 
@@ -326,24 +282,20 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 				year_start: this.$yearStartInput.val(),
 				year_end: this.$yearEndInput.val()
 			} );
+			return this;
 		},
 
 		render: function() {
-			var copyUrl = '';
-			
 			// Set UI elements to current query values
 
-			this.$exhibitorInput.val( ( this.model.geoJsonQuery.get( 'artistid' ) || '' ).split( ',' ) );
-			this.$countrySelect.val( ( this.model.geoJsonQuery.get( 'countryid' ) || 'any' ).split( ',' ) );
+			this.$exhibitorInput.val( this.query.getWhereValue( 'artlas.artlas.%expose_person.nom', 'LIKE' ) );
+			this.$countrySelect.val( this.query.getWhereValue( 'artlas.artlas.pays.id', '=' ) );
 
-			this.$yearStartInput.val( this.model.geoJsonQuery.get( 'year_start' ) );
-			this.$yearEndInput.val( this.model.geoJsonQuery.get( 'year_end' ) );
+			this.$yearStartInput.val( this.query.getWhereValue( 'artlas.artlas.date.annee', '>=' ) );
+			this.$yearEndInput.val( this.query.getWhereValue( 'artlas.artlas.date.annee', '<=' ) );
 			this.$rangeButton.hide();
 			
 			this.$exhibitCount.text( this.featureCollection.length );
-
-			copyUrl = this.model.get( 'url' ); 
-			this.$kmlUrlInput.val( copyUrl );
 
 			return this;
 		},
@@ -380,7 +332,7 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 				this.map.addLayer( this.markerLayer );
 				this.markerExtent = new OpenLayers.Bounds();
 				this.featureCollection.each( function( feature ) {
-					var lonlat = new OpenLayers.LonLat( feature.get( 'coordinates' )[0], feature.get( 'coordinates' )[1] )
+					var lonlat = new OpenLayers.LonLat( feature.get( 'x' ), feature.get( 'y' ) )
 						.transform( new OpenLayers.Projection( 'EPSG:4326' ), this.map.getProjectionObject() ),
 						marker = new OpenLayers.Marker( lonlat, this.icon.clone() );
 					this.markerLayer.addMarker( marker );
@@ -411,7 +363,7 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 		fetch: function() {
 			this.trigger( 'fetch' );
 
-			this.featureCollection.url = this.model.geoJsonQuery.get( 'url' );
+			this.featureCollection.url = this.query.getUrl();
 
 			return this.featureCollection.fetch( {
 				context: this,
@@ -439,15 +391,17 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			this.$primaryKmlUrlInput = $( '#ahmaps_stored_kml_url' );
 
 			// Init the QueryViews before hiding things so the maps center correctly
-			this.defaultQueryUrl = ahmapsQueryAppConfig.apiBaseUrl + 'exhibitions/kml?year_start=1950&year_end=1950'; 
+			this.defaultQueryUrl = ahmapsQueryAppConfig.apiBaseUrl +
+				'0/query?where=artlas.artlas.date.annee>=1950+AND+artlas.artlas.date.annee<=1950' +
+				'&outFields=*&returnGeometry=true&f=json';
 			this.queryViews = [ 
 				new QueryView( {
 					el: $( '#ahmaps_featured_query' ).get( 0 ),
-					model: new KmlQuery( { url: this.$primaryKmlUrlInput.val() } ) 
+					query: new ArtlasQuery( this.$primaryKmlUrlInput.val() )
 				} ),
 				new QueryView( {
 					el: $( '#ahmaps_scratch_query' ).get( 0 ),
-					model: new KmlQuery( { url: this.defaultQueryUrl } )
+					query: new ArtlasQuery( this.defaultQueryUrl )
 				} )
 			];
 
@@ -479,14 +433,12 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 		addData: function( e ) {
 			e.preventDefault();
-			this.queryViews[0].model.set( { 
-				url: this.defaultQueryUrl
-			} );
+			this.queryViews[0].query.setUrl( this.defaultQueryUrl );
 			this.queryViews[1].fetch();
 		},
 
 		attachData: function( e ) {
-			this.$primaryKmlUrlInput.val( this.queryViews[0].model.get( 'url' ) );
+			this.$primaryKmlUrlInput.val( this.queryViews[0].query.getUrl() );
 		}, 
 
 		newCenter: function( centerLonLat ) {
@@ -510,7 +462,7 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 		reset: function() {
 			this.showTabs();
-			if ( this.queryViews[0].model.get( 'url' ) != this.$primaryKmlUrlInput.val() ) {
+			if ( this.queryViews[0].query.getUrl() != this.$primaryKmlUrlInput.val() ) {
 				this.$submitPanel.show();
 			}
 		}
