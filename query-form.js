@@ -2,7 +2,7 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 /*
  * Use backbone.js to create an user interface for building queries against
- * the art history data served from ahmapsQueryAppConfig.base_api_url.
+ * the art history data served from the ArcGIS server at ahmapsQueryAppConfig.base_api_url.
  */
 
 (function( $ ) {
@@ -16,6 +16,8 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 		parse: function( response ) {
 			var fields = {};
+			// Fully qualified field names don't work with templates
+			// We can use just the most specific name, skipping 'id'
 			_.each( response.attributes, function( value, name ) {
 				var names = name.split( '.' ),
 					name = names.pop();
@@ -78,12 +80,8 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			return this.wheres[ field + ' ' + operator ];
 		},
 
-		setWhere: function( clause ) {
-			var matches;
-
-			if ( this.clauseRegex.exec( clause ) ) {
-				this.wheres[ matches[1] + ' ' + matches[2] ] = matches[3];
-			}
+		setWhere: function( field, operator, value ) {
+			this.wheres[ field + ' ' + operator ] = value;
 			this.compile();
 			return this;
 		},
@@ -128,13 +126,18 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 		compile: function() {
 			var url = this.url,
-				a = $( '<a></a>' ).attr( 'href', url ).get( 0 );
+				a = $( '<a></a>' ).attr( 'href', url ).get( 0 ),
+				clauses;
 
 			// Build the URL from elements
 			if ( this.wheres.length === 0 ) {
 				delete this.parameters.where;
 			} else {
-				this.parameters.where = this.wheres.join( ' AND ' );
+				clauses = [];
+				_.each( this.wheres, function( value, key ) {
+					clauses.push( key + ' ' + value );
+				});
+				this.parameters.where = clauses.join( ' AND ' );
 			}
 
 			a.search = '';
@@ -253,7 +256,7 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 				this.artlasQuery.removeWhere( 'artlas.artlas.pays.id', '=' );
 				this.$countrySelect.val( ['any'] );
 			} else {
-				this.artlasQuery.setWhere( 'artlas.artlas.pays.id = ' + this.$countrySelect.val() );
+				this.artlasQuery.setWhere( 'artlas.artlas.pays.id', '=', this.$countrySelect.val() );
 			}
 		},
 
@@ -276,12 +279,23 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 		},
 
 		setRange: function( e ) {
+			var year_start = this.$yearStartInput.val(),
+				year_end = this.$yearEndInput.val();
+
 			// Button event - don't submit the form
 			e.preventDefault();
-			this.model.geoJsonQuery.set( {
-				year_start: this.$yearStartInput.val(),
-				year_end: this.$yearEndInput.val()
-			} );
+
+			if ( year_start ) {
+				this.query.setWhere( 'artlas.artlas.date.annee', '>=', year_start );
+			} else {
+				this.query.removeWhere( 'artlas.artlas.date.annee', '>=' );
+			}
+			if ( year_end ) {
+				this.query.setWhere( 'artlas.artlas.date.annee', '<=', year_end );
+			} else {
+				this.query.removeWhere( 'artlas.artlas.date.annee', '<=' );
+			}
+			this.fetch();
 			return this;
 		},
 
@@ -371,7 +385,6 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 				reset: true
 			} ).error( this.fetchError );
 		}
-
 	} );
 
 	/*
