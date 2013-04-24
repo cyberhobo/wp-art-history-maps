@@ -66,6 +66,21 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 	_.extend( ArtlasQuery.prototype, Backbone.Events, {
 
+		getType: function() {
+			return this.type;
+		},
+
+		setType: function( type ) {
+			if ( type === '1' ) {
+				this.type = '1';
+			} else {
+				this.type = '0';
+			}
+			this.removeWheres();
+			this.compile();
+			return this;
+		},
+
 		getUrl: function() {
 			return this.url;
 		},
@@ -74,6 +89,10 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			this.url = url;
 			this.parse();
 			return this;
+		},
+
+		getWhereCount: function() {
+			return _.size( this.wheres );
 		},
 
 		getWhereValue: function( field, operator ) {
@@ -88,6 +107,14 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 		removeWhere: function( field, operator ) {
 			delete this.wheres[ field + ' ' + operator ];
+			this.compile();
+			return this;
+		},
+
+		removeWheres: function() {
+			this.wheres = {};
+			this.compile();
+			return this;
 		},
 
 		indexWheres: function() {
@@ -114,6 +141,12 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 				paramRegexp = /([^&=]+)=?([^&]*)/g,
 				matches;
 
+			if ( url.indexOf( '/1/query' ) > 0 ) {
+				this.type = '1';
+			} else {
+				this.type = '0';
+			}
+
 			this.parameters = {};
 			while( matches = paramRegexp.exec( querystring ) ) {
 				this.parameters[ decode( matches[1] ) ] = decode( matches[2] );
@@ -125,7 +158,7 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 		},
 
 		compile: function() {
-			var url = this.url,
+			var url = this.url.replace( /\/\d\/query/, '/' + this.type + '/query' ),
 				a = $( '<a></a>' ).attr( 'href', url ).get( 0 ),
 				clauses;
 
@@ -188,8 +221,6 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			this.$el.html( this.template( { cid: this.cid } ) );
 
 			// Reference UI elements
-			this.$queryPanel = this.$( '.query-panel' );
-			this.$resultsPanel = this.$( '.results-panel' );
 			this.$map = this.$( '.map' );
 			this.map = new OpenLayers.Map(
 				this.$map.get( 0 ),
@@ -208,6 +239,8 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			    new OpenLayers.Pixel( -5, -13 )
 			);
 			this.map.setCenter( new OpenLayers.LonLat( 0, 0 ), 1 );
+			this.$queryTypeRadios = this.$( 'input.query-type' );
+			this.$queryTypePanels = this.$( '.query-type-panel' ).hide().eq( 0 ).show().end();
 			this.$resultsList = this.$( '.results-list' );
 			this.$resultsTBody = this.$resultsList.find( 'tbody' );
 			this.$exhibitCount = this.$( '.exhibit-count' );
@@ -216,13 +249,11 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			this.$yearStartInput = this.$( 'input.year-start' );
 			this.$yearEndInput = this.$( 'input.year-end' );
 			this.$rangeButton  = this.$( 'button.range-button' );
-			this.$kmlUrlInput = this.$( 'input.kml-url' )
-				.focus( function() { $(this).select(); } )
+			this.$kmlUrlInput = this.$( 'input.kml-url' ) .focus( function() { $(this).select(); } )
 				.keypress( function( e ) { e.preventDefault(); } )
 				.mouseup( function( e ) { e.preventDefault(); } )
 
 			this.query = options.query;
-			this.query.on( 'compile', this.fetch, this );
 
 			this.featureCollection = new FeatureCollection();
 			this.featureCollection.on( 'add', this.addFeature, this );
@@ -238,17 +269,28 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 		},
 
 		events: {
+			'change input.query-type': 'setType',
 			'keypress input:text.no-submit': 'swallowEnterKey',
-			'keyup input.exhibitor': 'acceptExhibitor',
+			'keypress input.exhibitor': 'acceptExhibitor',
 			'change select.countries': 'selectCountries',
 			'keyup input.year-start': 'acceptYear',
 			'keyup input.year-end': 'acceptYear',
 			'click button.range-button': 'setRange'
 		},
 
+		setType: function() {
+			this.query.setType( this.$queryTypeRadios.filter( ':checked' ).val() );
+			this.fetch();
+			return this;
+		},
+
 		acceptExhibitor: function( e ) {
 			var $input = $( e.currentTarget );
-			console.log( $input.val() );
+			if ( ( e.keyCode && e.keyCode === 13 ) || ( e.which && e.which === 13 ) ) {
+				e.preventDefault();
+				this.query.setWhere( 'artlas.artlas.%personnage.nom', 'LIKE', "'%" + $input.val() + "%'" );
+				this.fetch();
+			}
 		},
 
 		selectCountries: function() {
@@ -300,9 +342,14 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 		},
 
 		render: function() {
+			var copyUrl = '',
+				queryType = this.query.getType();
 			// Set UI elements to current query values
 
-			this.$exhibitorInput.val( this.query.getWhereValue( 'artlas.artlas.%expose_person.nom', 'LIKE' ) );
+			this.$queryTypeRadios.filter( '[value=' + queryType + ']' ).prop( 'checked', true );
+			this.$queryTypePanels.hide().filter( '.query-type-' + queryType ).show();
+
+			this.$exhibitorInput.val( this.query.getWhereValue( 'artlas.artlas.%personnage.nom', 'LIKE' ) );
 			this.$countrySelect.val( this.query.getWhereValue( 'artlas.artlas.pays.id', '=' ) );
 
 			this.$yearStartInput.val( this.query.getWhereValue( 'artlas.artlas.date.annee', '>=' ) );
@@ -310,6 +357,14 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			this.$rangeButton.hide();
 			
 			this.$exhibitCount.text( this.featureCollection.length );
+
+			if ( this.query.getWhereCount() ) {
+				copyUrl = this.query.getUrl();
+				copyUrl = copyUrl.replace( 'f=json', 'f=kmz' );
+				// Add a fake file extension parameter for KML file detectors
+				copyUrl += '&ext=.kmz';
+			}
+			this.$kmlUrlInput.val( copyUrl );
 
 			return this;
 		},
@@ -327,8 +382,8 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			this.$resultsTBody.empty();
 			this.featureCollection.each( this.addFeature, this );
 
-			if ( this.kmlLayer ) {
-				this.map.removeLayer( this.kmlLayer );
+			if ( this.markerLayer ) {
+				this.markerLayer.destroy();
 			}
 
 			if ( 0 === this.featureCollection.length ) {
@@ -339,9 +394,6 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 			} else {
 
-				if ( this.markerLayer ) {
-					this.markerLayer.destroy();
-				}
 				this.markerLayer = new OpenLayers.Layer.Markers( 'Markers' );
 				this.map.addLayer( this.markerLayer );
 				this.markerExtent = new OpenLayers.Bounds();

@@ -21,7 +21,6 @@ if ( !is_wp_error( $country_response ) and $country_response['response']['code']
 		usort( $countries, create_function( '$a,$b', 'if ( $a->name == $b->name ) return 0; else return ( $a->name < $b->name ) ? -1 : 1;' ) );
 	}
 }
-
 ?>
 <div id="ahmaps_query_app">
 <input id="ahmaps_nonce" name="ahmaps_nonce" type="hidden" value="<?php echo wp_create_nonce(); ?>" />
@@ -75,26 +74,36 @@ if ( !is_wp_error( $country_response ) and $country_response['response']['code']
 	<div class="query-summary"></div>
 
 	<p>
-		<label>Exhibitor</label>
-		<input class="exhibitor no-submit" size="25" type="text" />
-	</p>
-	
-	<p>
-		<label>Year Range</label>
-		<input class="year-start no-submit" type="text" size="5" value="1900" /> to
-		<input class="year-end no-submit" type="text" size="5" />
-		<button class="range-button">Limit Range</button>
+		<label>Query Type</label>
+		<input class="query-type" type="radio" name="<%= cid %>_query_type" value="0" checked="checked" /> Exhibition
+		<input class="query-type" type="radio" name="<%= cid %>_query_type" value="1" /> Exhibitor
 	</p>
 
-	<p>
-		<label>Country</label>
-		<select class="countries filter-select" size="7" multiple="true">
-			<option value="any">any</option>
-			<?php foreach( $countries as $country ) : ?>
-			<option value="<?php echo $country->id; ?>"><?php echo $country->name . ' (' . $country->iso . ')'; ?></option>
-			<?php endforeach; ?>
-		</select>
-	</p>
+	<div class="query-type-panel query-type-0">
+		<p>
+			<label>Year Range</label>
+			<input class="year-start no-submit" type="text" size="5" value="1900" /> to
+			<input class="year-end no-submit" type="text" size="5" />
+			<button class="range-button">Limit Range</button>
+		</p>
+
+		<p>
+			<label>Country</label>
+			<select class="countries filter-select" size="7" multiple="true">
+				<option value="any">any</option>
+				<?php foreach( $countries as $country ) : ?>
+				<option value="<?php echo $country->id; ?>"><?php echo $country->name . ' (' . $country->iso . ')'; ?></option>
+				<?php endforeach; ?>
+			</select>
+		</p>
+	</div>
+
+	<div class="query-type-panel query-type-1">
+		<p>
+			<label>Exhibitor Search</label>
+			<input class="exhibitor" size="25" type="text" />
+		</p>
+	</div>
 
 	<p>
 		<label>KML URL</label>
