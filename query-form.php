@@ -7,20 +7,6 @@
 global $post_ID;
 $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 $more_kml_urls = get_post_meta( $post_ID, 'ahmaps_more_kml_url' );
-
-if( !class_exists( 'WP_Http' ) )
-	include_once( ABSPATH . WPINC. '/class-http.php' );
-$http = new WP_Http();
-
-$country_response = $http->get( 'http://geodev.lib.purdue.edu/dossin/api/countries/json' );
-$countries = array();
-if ( !is_wp_error( $country_response ) and $country_response['response']['code'] == '200' ) {
-	$body = json_decode( $country_response['body'] );
-	if ( count( $body->results[0] ) > 0 ) {
-		$countries = $body->results[0];
-		usort( $countries, create_function( '$a,$b', 'if ( $a->name == $b->name ) return 0; else return ( $a->name < $b->name ) ? -1 : 1;' ) );
-	}
-}
 ?>
 <div id="ahmaps_query_app">
 <input id="ahmaps_nonce" name="ahmaps_nonce" type="hidden" value="<?php echo wp_create_nonce(); ?>" />
@@ -82,19 +68,19 @@ if ( !is_wp_error( $country_response ) and $country_response['response']['code']
 	<div class="query-type-panel query-type-0">
 		<p>
 			<label>Year Range</label>
-			<input class="year-start no-submit" type="text" size="5" value="1900" /> to
+			<input class="year-start no-submit" type="text" size="5" /> to
 			<input class="year-end no-submit" type="text" size="5" />
 			<button class="range-button">Limit Range</button>
 		</p>
 
 		<p>
-			<label>Country</label>
-			<select class="countries filter-select" size="7" multiple="true">
-				<option value="any">any</option>
-				<?php foreach( $countries as $country ) : ?>
-				<option value="<?php echo $country->id; ?>"><?php echo $country->name . ' (' . $country->iso . ')'; ?></option>
-				<?php endforeach; ?>
-			</select>
+			<label>Country Search</label>
+			<input class="country" size="25" type="text" />
+		</p>
+
+		<p>
+			<label>Institution Search</label>
+			<input class="institution" size="25" type="text" />
 		</p>
 	</div>
 

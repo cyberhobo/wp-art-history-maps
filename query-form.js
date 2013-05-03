@@ -1,4 +1,4 @@
-var ahmapsQueryAppConfig, jQuery, OpenLayers;
+var ahmapsQueryAppConfig, jQuery, google;
 
 /*
  * Use backbone.js to create an user interface for building queries against
@@ -97,6 +97,13 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 		getWhereValue: function( field, operator ) {
 			return this.wheres[ field + ' ' + operator ];
+		},
+
+		getTrimmedWhereValue: function( field, operator ) {
+			var value = this.getWhereValue( field, operator );
+			if ( value ) {
+				return value.replace( /^[\s'%]+|[\s'%]+$/g, '' );
+			}
 		},
 
 		setWhere: function( field, operator, value ) {
@@ -222,30 +229,19 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 
 			// Reference UI elements
 			this.$map = this.$( '.map' );
-			this.map = new OpenLayers.Map(
-				this.$map.get( 0 ),
-				{
-					maxExtent: new OpenLayers.Bounds(-20037508.34,-20037508.34,20037508.34,20037508.34),
-					maxResolution: 156543,
-					numZoomLevels: 18,
-					units: 'm',
-					projection: 'EPSG:900913'
-				}
-			);
-			this.map.addLayer( new OpenLayers.Layer.OSM() );
-			this.icon = new OpenLayers.Icon(
-				'http://www.openlayers.org/dev/img/marker.png',
-			    new OpenLayers.Size( 11, 13 ),
-			    new OpenLayers.Pixel( -5, -13 )
-			);
-			this.map.setCenter( new OpenLayers.LonLat( 0, 0 ), 1 );
+			this.map = new google.maps.Map( this.$map.get( 0 ), {
+				center: new google.maps.LatLng( 0, 0 ),
+				zoom: 1,
+				mapTypeId: google.maps.MapTypeId.TERRAIN
+			} );
 			this.$queryTypeRadios = this.$( 'input.query-type' );
 			this.$queryTypePanels = this.$( '.query-type-panel' ).hide().eq( 0 ).show().end();
 			this.$resultsList = this.$( '.results-list' );
 			this.$resultsTBody = this.$resultsList.find( 'tbody' );
 			this.$exhibitCount = this.$( '.exhibit-count' );
 			this.$exhibitorInput = this.$( 'input.exhibitor' );
-			this.$countrySelect = this.$( 'select.countries' );
+			this.$countryInput = this.$( 'input.country' );
+			this.$institutionInput = this.$( 'input.institution' );
 			this.$yearStartInput = this.$( 'input.year-start' );
 			this.$yearEndInput = this.$( 'input.year-end' );
 			this.$rangeButton  = this.$( 'button.range-button' );
@@ -272,10 +268,17 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			'change input.query-type': 'setType',
 			'keypress input:text.no-submit': 'swallowEnterKey',
 			'keypress input.exhibitor': 'acceptExhibitor',
-			'change select.countries': 'selectCountries',
+			'keypress input.country': 'acceptCountry',
+			'keypress input.institution': 'acceptInstitution',
 			'keyup input.year-start': 'acceptYear',
 			'keyup input.year-end': 'acceptYear',
 			'click button.range-button': 'setRange'
+		},
+
+		resizeMap: function() {
+			var center = this.map.getCenter();
+			google.maps.event.trigger( this.map, 'resize' );
+			this.map.setCenter( center );
 		},
 
 		setType: function() {
@@ -284,21 +287,50 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			return this;
 		},
 
-		acceptExhibitor: function( e ) {
-			var $input = $( e.currentTarget );
-			if ( ( e.keyCode && e.keyCode === 13 ) || ( e.which && e.which === 13 ) ) {
+		eventInputTextIfEnterKey: function( e ) {
+			if ( ( event.keyCode && event.keyCode === 13 ) || ( event.which && event.which === 13 ) ) {
 				e.preventDefault();
-				this.query.setWhere( 'artlas.artlas.%personnage.nom', 'LIKE', "'%" + $input.val() + "%'" );
-				this.fetch();
+				return $( e.currentTarget ).val();
+			}
+			return false;
+		},
+
+		updateSearchWhere: function( field, operator, value ) {
+			if ( value ) {
+				this.query.setWhere( field, operator, value );
+			} else {
+				this.query.removeWhere( field, operator );
+			}
+			this.fetch();
+		},
+
+		acceptExhibitor: function( e ) {
+			var text = this.eventInputTextIfEnterKey( e );
+			if ( text !== false ) {
+				if ( text !== '' ) {
+					text = "'%" + text + "%'";
+				}
+				this.updateSearchWhere( 'artlas.artlas.%personnage.nom', 'LIKE', text );
 			}
 		},
 
-		selectCountries: function() {
-			if ( this.$countrySelect.val().join('').indexOf( 'any' ) >= 0 ) {
-				this.artlasQuery.removeWhere( 'artlas.artlas.pays.id', '=' );
-				this.$countrySelect.val( ['any'] );
-			} else {
-				this.artlasQuery.setWhere( 'artlas.artlas.pays.id', '=', this.$countrySelect.val() );
+		acceptCountry: function( e ) {
+			var text = this.eventInputTextIfEnterKey( e );
+			if ( text !== false ) {
+				if ( text !== '' ) {
+					text = "'" + text + "'";
+				}
+				this.updateSearchWhere( 'artlas.artlas.pays.nom', '=', text );
+			}
+		},
+
+		acceptInstitution: function( e ) {
+			var text = this.eventInputTextIfEnterKey( e );
+			if ( text !== false ) {
+				if ( text !== '' ) {
+					text = "'%" + text + "%'";
+				}
+				this.updateSearchWhere( 'artlas.artlas.adresse.complement', 'LIKE', text );
 			}
 		},
 
@@ -349,8 +381,9 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			this.$queryTypeRadios.filter( '[value=' + queryType + ']' ).prop( 'checked', true );
 			this.$queryTypePanels.hide().filter( '.query-type-' + queryType ).show();
 
-			this.$exhibitorInput.val( this.query.getWhereValue( 'artlas.artlas.%personnage.nom', 'LIKE' ) );
-			this.$countrySelect.val( this.query.getWhereValue( 'artlas.artlas.pays.id', '=' ) );
+			this.$exhibitorInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.%personnage.nom', 'LIKE' ) );
+			this.$countryInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.pays.nom', '=' ) );
+			this.$institutionInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.adresse.complement', 'LIKE' ) );
 
 			this.$yearStartInput.val( this.query.getWhereValue( 'artlas.artlas.date.annee', '>=' ) );
 			this.$yearEndInput.val( this.query.getWhereValue( 'artlas.artlas.date.annee', '<=' ) );
@@ -382,47 +415,21 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			this.$resultsTBody.empty();
 			this.featureCollection.each( this.addFeature, this );
 
-			if ( this.markerLayer ) {
-				this.markerLayer.destroy();
+			if ( !( 'kmlLayer' in this ) ) {
+				this.kmlLayer = new google.maps.KmlLayer( { map: this.map } );
 			}
-
 			if ( 0 === this.featureCollection.length ) {
 
-				this.kmlLayer = null;
-				this.map.setCenter( new OpenLayers.LonLat( 0, 0 ), 1 );
+				this.kmlLayer.setMap( null );
+				this.map.setCenter( new google.maps.LatLng( 0, 0 ) );
+				this.map.setZoom( 1 );
 				this.trigger( 'noResultsFound' );
 
 			} else {
 
-				this.markerLayer = new OpenLayers.Layer.Markers( 'Markers' );
-				this.map.addLayer( this.markerLayer );
-				this.markerExtent = new OpenLayers.Bounds();
-				this.featureCollection.each( function( feature ) {
-					var lonlat = new OpenLayers.LonLat( feature.get( 'x' ), feature.get( 'y' ) )
-						.transform( new OpenLayers.Projection( 'EPSG:4326' ), this.map.getProjectionObject() ),
-						marker = new OpenLayers.Marker( lonlat, this.icon.clone() );
-					this.markerLayer.addMarker( marker );
-					this.markerExtent.extend( lonlat );
-				}, this );
-				this.map.zoomToExtent( this.markerExtent );
+				this.kmlLayer.setUrl( this.query.getUrl().replace( 'f=json', 'f=kmz' ) );
+				this.kmlLayer.setMap( this.map );
 
-				/* OpenLayers can't load remote data
-				this.kmlLayer = new OpenLayers.Layer.Vector( 'KML', {
-					strategies: [new OpenLayers.Strategy.Fixed()],
-					protocol: new OpenLayers.Protocol.HTTP({
-						url: this.model.get( 'url' ),
-						format: new OpenLayers.Format.KML({
-								extractStyles: true,
-								extractAttributes: true,
-								maxDepth: 2
-						})
-				   })
-				});
-				if ( this.map.addLayer( this.kmlLayer ) ) {
-					this.map.zoomToExtent( this.kmlLayer.getExtent() );
-					this.trigger( 'newCenter', this.kmlLayer.getExtent().getCenterLonLat() );
-				}
-				*/
 			}
 		},
 
@@ -459,7 +466,7 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			this.defaultQueryUrl = ahmapsQueryAppConfig.apiBaseUrl +
 				'0/query?where=artlas.artlas.date.annee>=1950+AND+artlas.artlas.date.annee<=1950' +
 				'&outFields=*&returnGeometry=true&f=json';
-			this.queryViews = [ 
+			this.queryViews = [
 				new QueryView( {
 					el: $( '#ahmaps_featured_query' ).get( 0 ),
 					query: new ArtlasQuery( this.$primaryKmlUrlInput.val() )
@@ -474,13 +481,14 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 			this.$busyPanel = $( '#ahmaps_busy' ).hide();
 			this.$newPanel = $( '#ahmaps_new_panel' ).hide();
 			this.$submitPanel = this.$( '.submit' ).hide();
-			this.$tabs = $( '#ahmaps_query_tabs' ).tabs().hide();
+			this.$tabs = $( '#ahmaps_query_tabs' ).tabs( { active: 0, activate: $.proxy( this.switchTab, this ) } ).hide();
 			this.$message = $( '#ahmaps_message' ).hide();
 			this.$centerLatInput = $( '#ahmaps_center_lat' );
 			this.$centerLngInput = $( '#ahmaps_center_lng' );
 			this.$attachButton = this.$( 'input.attach-button' );
 			
 			this.queryViews[0].on( 'newCenter', this.newCenter, this );
+			this.activeQueryIndex = 0;
 
 			// Enable a spinner while data is being fetched for any query
 			_.each( this.queryViews, function( queryView ) {
@@ -499,12 +507,17 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 		addData: function( e ) {
 			e.preventDefault();
 			this.queryViews[0].query.setUrl( this.defaultQueryUrl );
-			this.queryViews[1].fetch();
+			_.invoke( this.queryViews, 'fetch' );
 		},
 
 		attachData: function( e ) {
 			this.$primaryKmlUrlInput.val( this.queryViews[0].query.getUrl() );
 		}, 
+
+		switchTab: function( e, ui ) {
+			this.activeQueryIndex = ui.newTab.index();
+			this.queryViews[ this.activeQueryIndex ].resizeMap();
+		},
 
 		newCenter: function( centerLonLat ) {
 			if ( centerLonLat ) {
@@ -512,11 +525,12 @@ var ahmapsQueryAppConfig, jQuery, OpenLayers;
 				this.$centerLngInput.val( centerLonLat.lon );
 			}
 		}, 
-			
+
 		showTabs: function() {
 			this.$newPanel.hide();
 			this.$busyPanel.hide();
 			this.$tabs.show();
+			this.queryViews[this.activeQueryIndex].resizeMap();
 		},
 
 		busy: function() {
