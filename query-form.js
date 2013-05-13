@@ -85,8 +85,13 @@ var ahmapsQueryAppConfig, jQuery, google;
 			return this.url;
 		},
 
+		getKmzUrl: function() {
+			return this.url.replace( 'f=json', 'f=kmz' ) + '&ext=.kmz';
+		},
+
 		setUrl: function( url ) {
-			this.url = url;
+			// Convert KMZ to JSON internally
+			this.url = url.replace( 'f=kmz', 'f=json' ).replace( '&ext=.kmz', '' );
 			this.parse();
 			return this;
 		},
@@ -374,8 +379,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 		},
 
 		render: function() {
-			var copyUrl = '',
-				queryType = this.query.getType();
+			var queryType = this.query.getType();
 			// Set UI elements to current query values
 
 			this.$queryTypeRadios.filter( '[value=' + queryType + ']' ).prop( 'checked', true );
@@ -392,12 +396,10 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.$exhibitCount.text( this.featureCollection.length );
 
 			if ( this.query.getWhereCount() ) {
-				copyUrl = this.query.getUrl();
-				copyUrl = copyUrl.replace( 'f=json', 'f=kmz' );
-				// Add a fake file extension parameter for KML file detectors
-				copyUrl += '&ext=.kmz';
+				this.$kmlUrlInput.val( this.query.getKmzUrl() );
+			} else {
+				this.$kmlUrlInput.val( '' );
 			}
-			this.$kmlUrlInput.val( copyUrl );
 
 			return this;
 		},
@@ -427,7 +429,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 			} else {
 
-				this.kmlLayer.setUrl( this.query.getUrl().replace( 'f=json', 'f=kmz' ) );
+				this.kmlLayer.setUrl( this.query.getKmzUrl() );
 				this.kmlLayer.setMap( this.map );
 				google.maps.event.addListener( this.kmlLayer, 'defaultviewport_changed', $.proxy( function() {
 					this.trigger( 'newCenter', this.kmlLayer.getDefaultViewport().getCenter() );
@@ -514,7 +516,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 		},
 
 		attachData: function( e ) {
-			this.$primaryKmlUrlInput.val( this.queryViews[0].query.getUrl() );
+			this.$primaryKmlUrlInput.val( this.queryViews[0].query.getKmzUrl() );
 		}, 
 
 		switchTab: function( e, ui ) {
