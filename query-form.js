@@ -429,6 +429,9 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 				this.kmlLayer.setUrl( this.query.getUrl().replace( 'f=json', 'f=kmz' ) );
 				this.kmlLayer.setMap( this.map );
+				google.maps.event.addListener( this.kmlLayer, 'defaultviewport_changed', $.proxy( function() {
+					this.trigger( 'newCenter', this.kmlLayer.getDefaultViewport().getCenter() );
+				}, this ) );
 
 			}
 		},
@@ -519,10 +522,10 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.queryViews[ this.activeQueryIndex ].resizeMap();
 		},
 
-		newCenter: function( centerLonLat ) {
-			if ( centerLonLat ) {
-				this.$centerLatInput.val( centerLonLat.lat );
-				this.$centerLngInput.val( centerLonLat.lon );
+		newCenter: function( centerLatLng ) {
+			if ( centerLatLng ) {
+				this.$centerLatInput.val( centerLatLng.lat() );
+				this.$centerLngInput.val( centerLatLng.lng() );
 			}
 		}, 
 
