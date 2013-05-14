@@ -68,13 +68,17 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 			add_action( 'admin_menu', array( __CLASS__, 'admin_menu' ) );
 		}
 
+		static function kml_url() {
+			return get_post_meta( get_the_ID(), 'ahmaps_kml_url', true );
+		}
+
 		static function shortcode_kml_link( $args='', $content = null ) {
 			$default_args = array(
 				'text' => 'Art history data for Google Earth',
 			);
 			$args = wp_parse_args( $args, $default_args );
 			$link = '';
-			$kml_url = get_post_meta( get_the_ID(), 'ahmaps_kml_url', true );
+			$kml_url = self::kml_url();
 			if ( $kml_url ) {
 				$link = '<a href="' . $kml_url . '">' . $args['text'] . '</a>';
 			}
