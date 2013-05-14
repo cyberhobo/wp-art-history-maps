@@ -150,7 +150,7 @@ if ( !class_exists( 'ArtHistoryMaps' ) ) {
 				// Enqueue query form resources
 				//wp_enqueue_script( 'openlayers', 'http://openlayers.org/api/OpenLayers.js' );
 				//wp_enqueue_script( 'openstreetmap', 'http://www.openstreetmap.org/openlayers/OpenStreetMap.js', array( 'openlayers' ) );
-				wp_enqueue_script( 'googlev3', 'http://maps.google.com/maps/api/js?sensor=false', '', '', true );
+				wp_enqueue_script( 'google-maps-3', 'http://maps.google.com/maps/api/js?sensor=false', '', '', true );
 
 				wp_enqueue_script( 'jquery-ui-tabs' );
 				if ( class_exists( 'GeoMashupUIManager' ) ) {
