@@ -246,7 +246,9 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.$exhibitCount = this.$( '.exhibit-count' );
 			this.$exhibitorInput = this.$( 'input.exhibitor' );
 			this.$countryInput = this.$( 'input.country' );
+			this.$cityInput = this.$( 'input.city' );
 			this.$institutionInput = this.$( 'input.institution' );
+			this.$titleInput = this.$( 'input.title' );
 			this.$yearStartInput = this.$( 'input.year-start' );
 			this.$yearEndInput = this.$( 'input.year-end' );
 			this.$rangeButton  = this.$( 'button.range-button' );
@@ -274,7 +276,9 @@ var ahmapsQueryAppConfig, jQuery, google;
 			'keypress input:text.no-submit': 'swallowEnterKey',
 			'keypress input.exhibitor': 'acceptExhibitor',
 			'keypress input.country': 'acceptCountry',
+			'keypress input.city': 'acceptCity',
 			'keypress input.institution': 'acceptInstitution',
+			'keypress input.title': 'acceptTitle',
 			'keyup input.year-start': 'acceptYear',
 			'keyup input.year-end': 'acceptYear',
 			'click button.range-button': 'setRange'
@@ -309,34 +313,34 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.fetch();
 		},
 
-		acceptExhibitor: function( e ) {
-			var text = this.eventInputTextIfEnterKey( e );
+		acceptLike: function( event, field ) {
+			var text = this.eventInputTextIfEnterKey( event );
 			if ( text !== false ) {
 				if ( text !== '' ) {
 					text = "'%" + text + "%'";
 				}
-				this.updateSearchWhere( 'artlas.artlas.%personnage.nom', 'LIKE', text );
+				this.updateSearchWhere( field, 'LIKE', text );
 			}
+		},
+
+		acceptExhibitor: function( e ) {
+			this.acceptLike( e, 'artlas.artlas.%personnage.nom' );
 		},
 
 		acceptCountry: function( e ) {
-			var text = this.eventInputTextIfEnterKey( e );
-			if ( text !== false ) {
-				if ( text !== '' ) {
-					text = "'" + text + "'";
-				}
-				this.updateSearchWhere( 'artlas.artlas.pays.nom', '=', text );
-			}
+			this.acceptLike( e, 'artlas.artlas.pays.nom' );
+		},
+
+		acceptCity: function( e ) {
+			this.acceptLike( e, 'artlas.artlas.%commune.nom' );
 		},
 
 		acceptInstitution: function( e ) {
-			var text = this.eventInputTextIfEnterKey( e );
-			if ( text !== false ) {
-				if ( text !== '' ) {
-					text = "'%" + text + "%'";
-				}
-				this.updateSearchWhere( 'artlas.artlas.adresse.complement', 'LIKE', text );
-			}
+			this.acceptLike( e, 'artlas.artlas.adresse.complement' );
+		},
+
+		acceptTitle: function( e ) {
+			this.acceptLike( e, 'artlas.artlas.%exposition_1.titre' );
 		},
 
 		swallowEnterKey: function( e ) {
@@ -386,8 +390,10 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.$queryTypePanels.hide().filter( '.query-type-' + queryType ).show();
 
 			this.$exhibitorInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.%personnage.nom', 'LIKE' ) );
-			this.$countryInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.pays.nom', '=' ) );
+			this.$countryInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.pays.nom', 'LIKE' ) );
+			this.$cityInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.%commune.nom', 'LIKE' ) );
 			this.$institutionInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.adresse.complement', 'LIKE' ) );
+			this.$titleInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.%exposition_1.titre', 'LIKE' ) );
 
 			this.$yearStartInput.val( this.query.getWhereValue( 'artlas.artlas.date.annee', '>=' ) );
 			this.$yearEndInput.val( this.query.getWhereValue( 'artlas.artlas.date.annee', '<=' ) );
