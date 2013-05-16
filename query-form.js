@@ -324,23 +324,23 @@ var ahmapsQueryAppConfig, jQuery, google;
 		},
 
 		acceptExhibitor: function( e ) {
-			this.acceptLike( e, 'artlas.artlas.%personnage.nom' );
+			this.acceptLike( e, 'nom' );
 		},
 
 		acceptCountry: function( e ) {
-			this.acceptLike( e, 'artlas.artlas.pays.nom' );
+			this.acceptLike( e, 'pays' );
 		},
 
 		acceptCity: function( e ) {
-			this.acceptLike( e, 'artlas.artlas.%commune.nom' );
+			this.acceptLike( e, 'commune' );
 		},
 
 		acceptInstitution: function( e ) {
-			this.acceptLike( e, 'artlas.artlas.adresse.complement' );
+			this.acceptLike( e, 'complement' );
 		},
 
 		acceptTitle: function( e ) {
-			this.acceptLike( e, 'artlas.artlas.%exposition_1.titre' );
+			this.acceptLike( e, 'titre' );
 		},
 
 		swallowEnterKey: function( e ) {
@@ -369,14 +369,14 @@ var ahmapsQueryAppConfig, jQuery, google;
 			e.preventDefault();
 
 			if ( year_start ) {
-				this.query.setWhere( 'artlas.artlas.date.annee', '>=', year_start );
+				this.query.setWhere( 'anneeb', '>=', year_start );
 			} else {
-				this.query.removeWhere( 'artlas.artlas.date.annee', '>=' );
+				this.query.removeWhere( 'anneeb', '>=' );
 			}
 			if ( year_end ) {
-				this.query.setWhere( 'artlas.artlas.date.annee', '<=', year_end );
+				this.query.setWhere( 'anneef', '<=', year_end );
 			} else {
-				this.query.removeWhere( 'artlas.artlas.date.annee', '<=' );
+				this.query.removeWhere( 'anneef', '<=' );
 			}
 			this.fetch();
 			return this;
@@ -389,14 +389,14 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.$queryTypeRadios.filter( '[value=' + queryType + ']' ).prop( 'checked', true );
 			this.$queryTypePanels.hide().filter( '.query-type-' + queryType ).show();
 
-			this.$exhibitorInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.%personnage.nom', 'LIKE' ) );
-			this.$countryInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.pays.nom', 'LIKE' ) );
-			this.$cityInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.%commune.nom', 'LIKE' ) );
-			this.$institutionInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.adresse.complement', 'LIKE' ) );
-			this.$titleInput.val( this.query.getTrimmedWhereValue( 'artlas.artlas.%exposition_1.titre', 'LIKE' ) );
+			this.$exhibitorInput.val( this.query.getTrimmedWhereValue( 'nom', 'LIKE' ) );
+			this.$countryInput.val( this.query.getTrimmedWhereValue( 'pays', 'LIKE' ) );
+			this.$cityInput.val( this.query.getTrimmedWhereValue( 'commune', 'LIKE' ) );
+			this.$institutionInput.val( this.query.getTrimmedWhereValue( 'complement', 'LIKE' ) );
+			this.$titleInput.val( this.query.getTrimmedWhereValue( 'titre', 'LIKE' ) );
 
-			this.$yearStartInput.val( this.query.getWhereValue( 'artlas.artlas.date.annee', '>=' ) );
-			this.$yearEndInput.val( this.query.getWhereValue( 'artlas.artlas.date.annee', '<=' ) );
+			this.$yearStartInput.val( this.query.getWhereValue( 'anneeb', '>=' ) );
+			this.$yearEndInput.val( this.query.getWhereValue( 'anneef', '<=' ) );
 			this.$rangeButton.hide();
 			
 			this.$exhibitCount.text( this.featureCollection.length );
@@ -475,7 +475,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 			// Init the QueryViews before hiding things so the maps center correctly
 			this.defaultQueryUrl = ahmapsQueryAppConfig.apiBaseUrl +
-				'0/query?where=artlas.artlas.date.annee>=1950+AND+artlas.artlas.date.annee<=1950' +
+				'0/query?where=anneeb>=1950+AND+anneef<=1950' +
 				'&outFields=*&returnGeometry=true&f=json';
 			this.queryViews = [
 				new QueryView( {
