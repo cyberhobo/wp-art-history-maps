@@ -6,16 +6,12 @@
  */
 global $post_ID;
 $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
-$more_kml_urls = get_post_meta( $post_ID, 'ahmaps_more_kml_url' );
 ?>
 <div id="ahmaps_query_app">
 	<input id="ahmaps_nonce" name="ahmaps_nonce" type="hidden" value="<?php echo wp_create_nonce(); ?>" />
 	<input id="ahmaps_stored_kml_url" name="ahmaps_stored_kml_url" type="hidden" value="<?php echo $stored_kml_url; ?>" />
 	<input id="ahmaps_center_lat" name="ahmaps_center_lat" type="hidden" value="" />
 	<input id="ahmaps_center_lng" name="ahmaps_center_lng" type="hidden" value="" />
-	<?php foreach ( $more_kml_urls as $more_kml_url ) :  ?>
-		<input id="ahmaps_more_kml_url[]" type="hidden" value="<?php echo $more_kml_url; ?>" />
-	<?php endforeach; ?>
 
 	<div id="ahmaps_busy" class="busy-indicator"></div>
 
