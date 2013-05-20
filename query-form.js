@@ -244,7 +244,9 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.$resultsList = this.$( '.results-list' );
 			this.$resultsTBody = this.$resultsList.find( 'tbody' );
 			this.$exhibitCount = this.$( '.exhibit-count' );
-			this.$exhibitorInput = this.$( 'input.exhibitor' );
+			this.$lastNameInput = this.$( 'input.exhibitor-last-name' );
+			this.$firstNameInput = this.$( 'input.exhibitor-first-name' );
+			this.$genderInput = this.$( 'input.gender' );
 			this.$countryInput = this.$( 'input.country' );
 			this.$cityInput = this.$( 'input.city' );
 			this.$institutionInput = this.$( 'input.institution' );
@@ -274,7 +276,9 @@ var ahmapsQueryAppConfig, jQuery, google;
 		events: {
 			'change input.query-type': 'setType',
 			'keypress input:text.no-submit': 'swallowEnterKey',
-			'keypress input.exhibitor': 'acceptExhibitor',
+			'keypress input.exhibitor-last-name': 'acceptLastName',
+			'keypress input.exhibitor-first-name': 'acceptFirstName',
+			'keypress input.gender': 'acceptGender',
 			'keypress input.country': 'acceptCountry',
 			'keypress input.city': 'acceptCity',
 			'keypress input.institution': 'acceptInstitution',
@@ -323,8 +327,16 @@ var ahmapsQueryAppConfig, jQuery, google;
 			}
 		},
 
-		acceptExhibitor: function( e ) {
+		acceptLastName: function( e ) {
 			this.acceptLike( e, 'nom' );
+		},
+
+		acceptFirstName: function( e ) {
+			this.acceptLike( e, 'prenom' );
+		},
+
+		acceptGender: function( e ) {
+			this.acceptLike( e, 'sexe' );
 		},
 
 		acceptCountry: function( e ) {
@@ -389,7 +401,9 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.$queryTypeRadios.filter( '[value=' + queryType + ']' ).prop( 'checked', true );
 			this.$queryTypePanels.hide().filter( '.query-type-' + queryType ).show();
 
-			this.$exhibitorInput.val( this.query.getTrimmedWhereValue( 'nom', 'LIKE' ) );
+			this.$lastNameInput.val( this.query.getTrimmedWhereValue( 'nom', 'LIKE' ) );
+			this.$firstNameInput.val( this.query.getTrimmedWhereValue( 'prenom', 'LIKE' ) );
+			this.$genderInput.val( this.query.getTrimmedWhereValue( 'sexe', 'LIKE' ) );
 			this.$countryInput.val( this.query.getTrimmedWhereValue( 'pays', 'LIKE' ) );
 			this.$cityInput.val( this.query.getTrimmedWhereValue( 'commune', 'LIKE' ) );
 			this.$institutionInput.val( this.query.getTrimmedWhereValue( 'complement', 'LIKE' ) );

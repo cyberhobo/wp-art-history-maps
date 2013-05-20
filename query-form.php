@@ -91,8 +91,16 @@ $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 
 		<div class="query-type-panel query-type-1">
 			<p>
-				<label>Exhibitor Search</label>
-				<input class="exhibitor" size="25" type="text" />
+				<label>Last Name Search</label>
+				<input class="exhibitor-last-name" size="25" type="text" />
+			</p>
+			<p>
+				<label>First Name Search</label>
+				<input class="exhibitor-first-name" size="25" type="text" />
+			</p>
+			<p>
+				<label>Gender</label>
+				<input class="gender" size="1" type="text" />
 			</p>
 		</div>
 
