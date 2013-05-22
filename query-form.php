@@ -40,6 +40,7 @@ $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 
 <script type="text/template" id="ahmaps_query_template">
 	<div class="results-panel">
+		<button class="fetch-button">Show Results</button>
 		<div class="map-panel">
 			<div class="map"></div>
 		</div>
@@ -65,7 +66,6 @@ $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 				<label>Year Range</label>
 				<input class="year-start no-submit" type="text" size="5" /> to
 				<input class="year-end no-submit" type="text" size="5" />
-				<button class="range-button">Limit Range</button>
 			</p>
 
 			<p>

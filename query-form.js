@@ -61,7 +61,6 @@ var ahmapsQueryAppConfig, jQuery, google;
 		} else if ( typeof data == 'string' ) {
 			this.setUrl( data );
 		}
-
 	};
 
 	_.extend( ArtlasQuery.prototype, Backbone.Events, {
@@ -241,6 +240,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 			} );
 			this.$queryTypeRadios = this.$( 'input.query-type' );
 			this.$queryTypePanels = this.$( '.query-type-panel' ).hide().eq( 0 ).show().end();
+			this.$mapPanel = this.$( '.map-panel' );
 			this.$resultsList = this.$( '.results-list' );
 			this.$resultsTBody = this.$resultsList.find( 'tbody' );
 			this.$exhibitCount = this.$( '.exhibit-count' );
@@ -253,12 +253,29 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.$titleInput = this.$( 'input.title' );
 			this.$yearStartInput = this.$( 'input.year-start' );
 			this.$yearEndInput = this.$( 'input.year-end' );
-			this.$rangeButton  = this.$( 'button.range-button' );
+
+			this.$fetchButton  = this.$( 'button.fetch-button' ).click( $.proxy( function( e ) {
+				e.preventDefault();
+				this.fetch();
+			}, this ) );
+
 			this.$kmlUrlInput = this.$( 'input.kml-url' ) .focus( function() { $(this).select(); } )
 				.keypress( function( e ) { e.preventDefault(); } )
 				.mouseup( function( e ) { e.preventDefault(); } )
 
+			// Trigger keypress for backspace
+			this.$( 'input' ).on( 'keyup', function( e ) {
+				if ( ( event.keyCode && event.keyCode === 8 ) || ( event.which && event.which === 8 ) ) {
+					$( e.currentTarget ).trigger( 'keypress' );
+				}
+			} );
+
 			this.query = options.query;
+			this.query.on( 'compile', function() {
+				this.$fetchButton.show();
+				this.$mapPanel.hide();
+				this.$resultsList.hide();
+			}, this );
 
 			this.featureCollection = new FeatureCollection();
 			this.featureCollection.on( 'add', this.addFeature, this );
@@ -300,12 +317,12 @@ var ahmapsQueryAppConfig, jQuery, google;
 			return this;
 		},
 
-		eventInputTextIfEnterKey: function( e ) {
+		fetchIfEnterKey: function( e ) {
 			if ( ( event.keyCode && event.keyCode === 13 ) || ( event.which && event.which === 13 ) ) {
 				e.preventDefault();
-				return $( e.currentTarget ).val();
+				this.fetch();
 			}
-			return false;
+			return this;
 		},
 
 		updateSearchWhere: function( field, operator, value ) {
@@ -314,17 +331,16 @@ var ahmapsQueryAppConfig, jQuery, google;
 			} else {
 				this.query.removeWhere( field, operator );
 			}
-			this.fetch();
 		},
 
 		acceptLike: function( event, field ) {
-			var text = this.eventInputTextIfEnterKey( event );
-			if ( text !== false ) {
-				if ( text !== '' ) {
-					text = "'%" + text + "%'";
-				}
-				this.updateSearchWhere( field, 'LIKE', text );
+			var text = $( event.currentTarget ).val();
+			if ( text !== '' ) {
+				text = "'%" + text + "%'";
 			}
+			this.updateSearchWhere( field, 'LIKE', text );
+			this.fetchIfEnterKey( event );
+			return this;
 		},
 
 		acceptLastName: function( e ) {
@@ -367,18 +383,16 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 			if ( valid_parts ) {
 				$input.val( valid_parts[0] );
-				this.$rangeButton.show();
 			} else {
 				$input.val( '' );
 			}
+
+			this.setRange();
 		},
 
-		setRange: function( e ) {
+		setRange: function() {
 			var year_start = this.$yearStartInput.val(),
 				year_end = this.$yearEndInput.val();
-
-			// Button event - don't submit the form
-			e.preventDefault();
 
 			if ( year_start ) {
 				this.query.setWhere( 'anneeb', '>=', year_start );
@@ -390,7 +404,6 @@ var ahmapsQueryAppConfig, jQuery, google;
 			} else {
 				this.query.removeWhere( 'anneef', '<=' );
 			}
-			this.fetch();
 			return this;
 		},
 
@@ -411,8 +424,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 			this.$yearStartInput.val( this.query.getWhereValue( 'anneeb', '>=' ) );
 			this.$yearEndInput.val( this.query.getWhereValue( 'anneef', '<=' ) );
-			this.$rangeButton.hide();
-			
+
 			this.$exhibitCount.text( this.featureCollection.length );
 
 			if ( this.query.getWhereCount() ) {
@@ -456,6 +468,9 @@ var ahmapsQueryAppConfig, jQuery, google;
 				}, this ) );
 
 			}
+			this.$fetchButton.hide();
+			this.$mapPanel.show();
+			this.$resultsList.show();
 		},
 
 		fetch: function() {
