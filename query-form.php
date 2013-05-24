@@ -64,43 +64,48 @@ $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 		<div class="query-type-panel query-type-0">
 			<p>
 				<label>Year Range</label>
-				<input class="year-start no-submit" type="text" size="5" /> to
-				<input class="year-end no-submit" type="text" size="5" />
+				<input data-field="anneeb" data-operator=">=" data-type="integer" type="text" size="5" /> to
+				<input data-field="anneef" data-operator="<=" data-type="integer" type="text" size="5" />
 			</p>
 
 			<p>
 				<label>Country Search</label>
-				<input class="country" size="25" type="text" />
+				<input data-field="pays" data-operator="LIKE" data-type="string" size="25" type="text" />
 			</p>
 
 			<p>
 				<label>City Search</label>
-				<input class="city" size="25" type="text" />
+				<input data-field="commune" data-operator="LIKE" data-type="string" size="25" type="text" />
 			</p>
 
 			<p>
 				<label>Institution Search</label>
-				<input class="institution" size="25" type="text" />
+				<input data-field="complement" data-operator="LIKE" data-type="string" size="25" type="text" />
 			</p>
 
 			<p>
 				<label>Title Search</label>
-				<input class="title" size="25" type="text" />
+				<input data-field="titre" data-operator="LIKE" data-type="string" size="25" type="text" />
 			</p>
 		</div>
 
 		<div class="query-type-panel query-type-1">
 			<p>
 				<label>Last Name Search</label>
-				<input class="exhibitor-last-name" size="25" type="text" />
+				<input data-field="nom" data-operator="LIKE" data-type="string" size="25" type="text" />
 			</p>
 			<p>
 				<label>First Name Search</label>
-				<input class="exhibitor-first-name" size="25" type="text" />
+				<input data-field="prenom" data-operator="LIKE" data-type="string" size="25" type="text" />
 			</p>
 			<p>
 				<label>Gender</label>
-				<input class="gender" size="1" type="text" />
+				<input data-field="sexe" data-operator="=" size="1" data-type="string" type="text" />
+			</p>
+			<p>
+				<label>Year Range</label>
+				<input data-field="annee_debut" data-operator=">=" data-type="integer" type="text" size="5" /> to
+				<input data-field="annee_fin" data-operator="<=" data-type="integer" type="text" size="5" />
 			</p>
 		</div>
 

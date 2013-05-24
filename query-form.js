@@ -244,15 +244,6 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.$resultsList = this.$( '.results-list' );
 			this.$resultsTBody = this.$resultsList.find( 'tbody' );
 			this.$exhibitCount = this.$( '.exhibit-count' );
-			this.$lastNameInput = this.$( 'input.exhibitor-last-name' );
-			this.$firstNameInput = this.$( 'input.exhibitor-first-name' );
-			this.$genderInput = this.$( 'input.gender' );
-			this.$countryInput = this.$( 'input.country' );
-			this.$cityInput = this.$( 'input.city' );
-			this.$institutionInput = this.$( 'input.institution' );
-			this.$titleInput = this.$( 'input.title' );
-			this.$yearStartInput = this.$( 'input.year-start' );
-			this.$yearEndInput = this.$( 'input.year-end' );
 
 			this.$fetchButton  = this.$( 'button.fetch-button' ).click( $.proxy( function( e ) {
 				e.preventDefault();
@@ -265,7 +256,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 			// Trigger keypress for backspace
 			this.$( 'input' ).on( 'keyup', function( e ) {
-				if ( ( event.keyCode && event.keyCode === 8 ) || ( event.which && event.which === 8 ) ) {
+				if ( e.which === 8 ) {
 					$( e.currentTarget ).trigger( 'keypress' );
 				}
 			} );
@@ -292,17 +283,8 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 		events: {
 			'change input.query-type': 'setType',
-			'keypress input:text.no-submit': 'swallowEnterKey',
-			'keypress input.exhibitor-last-name': 'acceptLastName',
-			'keypress input.exhibitor-first-name': 'acceptFirstName',
-			'keypress input.gender': 'acceptGender',
-			'keypress input.country': 'acceptCountry',
-			'keypress input.city': 'acceptCity',
-			'keypress input.institution': 'acceptInstitution',
-			'keypress input.title': 'acceptTitle',
-			'keyup input.year-start': 'acceptYear',
-			'keyup input.year-end': 'acceptYear',
-			'click button.range-button': 'setRange'
+			'keypress .query-type-panel input:text': 'acceptText',
+			'blur .query-type-panel input:text': 'acceptText'
 		},
 
 		resizeMap: function() {
@@ -333,97 +315,45 @@ var ahmapsQueryAppConfig, jQuery, google;
 			}
 		},
 
-		acceptLike: function( event, field ) {
-			var text = $( event.currentTarget ).val();
-			if ( text !== '' ) {
-				text = "'%" + text + "%'";
+		acceptText: function( e ) {
+			var $target = $( e.currentTarget ),
+				field = $target.data( 'field' ),
+				operator = $target.data( 'operator' ),
+				type = $target.data( 'type' ),
+				text = $target.val();
+
+			if ( text.length > 0 && 'string' === type ) {
+				if ( 'LIKE' === operator ) {
+					text = "'%" + text + "%'";
+				} else {
+					text = "'" + text + "'";
+				}
 			}
-			this.updateSearchWhere( field, 'LIKE', text );
-			this.fetchIfEnterKey( event );
-			return this;
-		},
-
-		acceptLastName: function( e ) {
-			this.acceptLike( e, 'nom' );
-		},
-
-		acceptFirstName: function( e ) {
-			this.acceptLike( e, 'prenom' );
-		},
-
-		acceptGender: function( e ) {
-			this.acceptLike( e, 'sexe' );
-		},
-
-		acceptCountry: function( e ) {
-			this.acceptLike( e, 'pays' );
-		},
-
-		acceptCity: function( e ) {
-			this.acceptLike( e, 'commune' );
-		},
-
-		acceptInstitution: function( e ) {
-			this.acceptLike( e, 'complement' );
-		},
-
-		acceptTitle: function( e ) {
-			this.acceptLike( e, 'titre' );
-		},
-
-		swallowEnterKey: function( e ) {
-			if ( ( e.keyCode && e.keyCode === 13 ) || ( e.which && e.which === 13 ) ) {
-				e.preventDefault();
-			}
-		}, 
-	
-		acceptYear: function( e ) {
-			var $input = $( e.currentTarget ),
-				valid_parts = $input.val().match( /-?\d*/ );
-
-			if ( valid_parts ) {
-				$input.val( valid_parts[0] );
-			} else {
-				$input.val( '' );
-			}
-
-			this.setRange();
-		},
-
-		setRange: function() {
-			var year_start = this.$yearStartInput.val(),
-				year_end = this.$yearEndInput.val();
-
-			if ( year_start ) {
-				this.query.setWhere( 'anneeb', '>=', year_start );
-			} else {
-				this.query.removeWhere( 'anneeb', '>=' );
-			}
-			if ( year_end ) {
-				this.query.setWhere( 'anneef', '<=', year_end );
-			} else {
-				this.query.removeWhere( 'anneef', '<=' );
-			}
+			this.updateSearchWhere( field, operator, text );
+			this.fetchIfEnterKey( e );
 			return this;
 		},
 
 		render: function() {
-			var queryType = this.query.getType();
+			var query = this.query,
+				queryType = query.getType();
+
 			// Set UI elements to current query values
 
 			this.$queryTypeRadios.filter( '[value=' + queryType + ']' ).prop( 'checked', true );
-			this.$queryTypePanels.hide().filter( '.query-type-' + queryType ).show();
+			this.$queryTypePanels.hide().filter( '.query-type-' + queryType ).show()
+				.find( 'input:text' ).each( function() {
+					var $input = $( this ),
+						type = $input.data( 'type' ),
+						value;
 
-			this.$lastNameInput.val( this.query.getTrimmedWhereValue( 'nom', 'LIKE' ) );
-			this.$firstNameInput.val( this.query.getTrimmedWhereValue( 'prenom', 'LIKE' ) );
-			this.$genderInput.val( this.query.getTrimmedWhereValue( 'sexe', 'LIKE' ) );
-			this.$countryInput.val( this.query.getTrimmedWhereValue( 'pays', 'LIKE' ) );
-			this.$cityInput.val( this.query.getTrimmedWhereValue( 'commune', 'LIKE' ) );
-			this.$institutionInput.val( this.query.getTrimmedWhereValue( 'complement', 'LIKE' ) );
-			this.$titleInput.val( this.query.getTrimmedWhereValue( 'titre', 'LIKE' ) );
-
-			this.$yearStartInput.val( this.query.getWhereValue( 'anneeb', '>=' ) );
-			this.$yearEndInput.val( this.query.getWhereValue( 'anneef', '<=' ) );
+					if ( 'string' === type ) {
+						value = query.getTrimmedWhereValue( $input.data( 'field' ), $input.data( 'operator' ) );
+					} else {
+						value = query.getWhereValue( $input.data( 'field' ), $input.data( 'operator' ) );
+					}
+					$input.val( value );
+				} );
 
 			this.$exhibitCount.text( this.featureCollection.length );
 
