@@ -111,14 +111,20 @@ var ahmapsQueryAppConfig, jQuery, google;
 		},
 
 		setWhere: function( field, operator, value ) {
-			this.wheres[ field + ' ' + operator ] = value;
-			this.compile();
+			var key = field + ' ' + operator;
+			if ( !( key in this.wheres && this.wheres[key] === value ) ) {
+				this.wheres[ field + ' ' + operator ] = value;
+				this.compile();
+			}
 			return this;
 		},
 
 		removeWhere: function( field, operator ) {
-			delete this.wheres[ field + ' ' + operator ];
-			this.compile();
+			var key = field + ' ' + operator;
+			if ( key in this.wheres ) {
+				delete this.wheres[ field + ' ' + operator ];
+				this.compile();
+			}
 			return this;
 		},
 
