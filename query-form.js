@@ -440,7 +440,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 			// Init the QueryViews before hiding things so the maps center correctly
 			this.defaultQueryUrl = ahmapsQueryAppConfig.apiBaseUrl +
-				'0/query?where=anneeb>=1950+AND+anneef<=1950' +
+				'1/query?where=annee_debut>=1950+AND+annee_fin<=1950' +
 				'&outFields=*&returnGeometry=true&f=json';
 			this.queryViews = [
 				new QueryView( {

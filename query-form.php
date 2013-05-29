@@ -91,6 +91,11 @@ $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 
 		<div class="query-type-panel query-type-1">
 			<p>
+				<label>Year Range</label>
+				<input data-field="annee_debut" data-operator=">=" data-type="integer" type="text" size="5" /> to
+				<input data-field="annee_fin" data-operator="<=" data-type="integer" type="text" size="5" />
+			</p>
+			<p>
 				<label>Last Name Search</label>
 				<input data-field="nom" data-operator="LIKE" data-type="string" size="25" type="text" />
 			</p>
@@ -102,10 +107,20 @@ $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 				<label>Gender</label>
 				<input data-field="sexe" data-operator="=" size="1" data-type="string" type="text" />
 			</p>
+
 			<p>
-				<label>Year Range</label>
-				<input data-field="annee_debut" data-operator=">=" data-type="integer" type="text" size="5" /> to
-				<input data-field="annee_fin" data-operator="<=" data-type="integer" type="text" size="5" />
+				<label>City Search</label>
+				<input data-field="city" data-operator="LIKE" data-type="string" size="25" type="text" />
+			</p>
+
+			<p>
+				<label>Country Search</label>
+				<input data-field="country" data-operator="LIKE" data-type="string" size="25" type="text" />
+			</p>
+
+			<p>
+				<label>Title Search</label>
+				<input data-field="titre" data-operator="LIKE" data-type="string" size="25" type="text" />
 			</p>
 		</div>
 
