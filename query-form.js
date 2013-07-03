@@ -209,15 +209,15 @@ var ahmapsQueryAppConfig, jQuery, google;
 	});
 
 	/*
-	 * Table row view of a feature.
+	 * Table row view of an exhibition feature.
  	 */
-	var FeatureView = Backbone.View.extend( {
+	var ExhibitionView = Backbone.View.extend( {
 
 		tagName: 'tr',
 
 		model: Feature,
 
-		template: _.template( $( '#ahmaps_feature_template' ).html() ),
+		template: _.template( $( '#ahmaps_feature_template_0' ).html() ),
 
 		render: function() {
 			this.$el.html( this.template( this.model.toJSON() ) );
@@ -226,7 +226,25 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 	} );
 
-	/* 
+	/*
+	 * Table row view of an exhibitor feature.
+ 	 */
+	var ExhibitorView = Backbone.View.extend( {
+
+		tagName: 'tr',
+
+		model: Feature,
+
+		template: _.template( $( '#ahmaps_feature_template_1' ).html() ),
+
+		render: function() {
+			this.$el.html( this.template( this.model.toJSON() ) );
+			return this;
+		}
+
+	} );
+
+	/*
 	 * UI to manipulate a query
 	 */
 	var QueryView = Backbone.View.extend( {
@@ -242,9 +260,10 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.$queryTypeRadios = this.$( 'input.query-type' );
 			this.$queryTypePanels = this.$( '.query-type-panel' ).hide().eq( 0 ).show().end();
 			this.$mapPanel = this.$( '.map-panel' );
-			this.$resultsList = this.$( '.results-list' );
+			this.$resultsLists = this.$( '.results-list' ).hide();
+			this.$resultsList = this.$resultsLists.eq(0);
 			this.$resultsTBody = this.$resultsList.find( 'tbody' );
-			this.$exhibitCount = this.$( '.exhibit-count' );
+			this.$resultCount = this.$( '.result-count' );
 
 			this.$fetchButton  = this.$( 'button.fetch-button' ).click( $.proxy( function( e ) {
 				e.preventDefault();
@@ -364,7 +383,9 @@ var ahmapsQueryAppConfig, jQuery, google;
 		},
 
 		setType: function() {
-			this.query.setType( this.$queryTypeRadios.filter( ':checked' ).val() );
+			var queryType = this.$queryTypeRadios.filter( ':checked' ).val();
+			this.query.setType( queryType );
+
 			this.fetch();
 			return this;
 		},
@@ -409,7 +430,8 @@ var ahmapsQueryAppConfig, jQuery, google;
 				queryType = query.getType();
 
 			// Set UI elements to current query values
-
+			this.$resultsList = this.$resultsLists.filter( '.query-type-' + queryType );
+			this.$resultsTBody = this.$resultsList.find( 'tbody' );
 			this.$queryTypeRadios.filter( '[value=' + queryType + ']' ).prop( 'checked', true );
 			this.$queryTypePanels.hide().filter( '.query-type-' + queryType ).show()
 				.find( 'input:text' ).each( function() {
@@ -425,7 +447,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 					$input.val( value );
 				} );
 
-			this.$exhibitCount.text( this.featureCollection.length );
+			this.$resultCount.text( this.featureCollection.length );
 
 			if ( this.query.getWhereCount() ) {
 				this.$kmlUrlInput.val( this.query.getKmzUrl() );
@@ -437,7 +459,13 @@ var ahmapsQueryAppConfig, jQuery, google;
 		},
 
 		addFeature: function( feature ) {
-			var view = new FeatureView({model: feature});
+			var queryType = this.query.getType(),
+				view;
+			if ( '0' === queryType ) {
+				view = new ExhibitionView({model: feature});
+			} else {
+				view = new ExhibitorView({model: feature});
+			}
 			this.$resultsTBody.append( view.render().el );
 		},
 
@@ -445,7 +473,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 			this.render();
 
-			this.$exhibitCount.text( this.featureCollection.length );
+			this.$resultCount.text( this.featureCollection.length );
 			this.$resultsTBody.empty();
 			this.featureCollection.each( this.addFeature, this );
 

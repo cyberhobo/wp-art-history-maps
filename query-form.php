@@ -44,9 +44,20 @@ $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 		<div class="map-panel">
 			<div class="map"></div>
 		</div>
-		<div class="results-list">
+		<div class="results-list query-type-0">
 			<table>
-				<thead><tr><th><span class="exhibit-count"></span> Exhibits</th></tr></thead>
+				<thead><tr><th><span class="result-count"></span> Exhibits</th><th>City</th><th>Year</th></tr></thead>
+				<tbody></tbody>
+			</table>
+		</div>
+		<div class="results-list query-type-1">
+			<table>
+				<thead><tr>
+					<th><span class="result-count"></span> Exhibitors</th>
+					<th>Exhibit</th>
+					<th>City</th>
+					<th>Year</th>
+				</tr></thead>
 				<tbody></tbody>
 			</table>
 		</div>
@@ -131,6 +142,10 @@ $stored_kml_url = get_post_meta( $post_ID, 'ahmaps_kml_url', true );
 	</div>
 </script>
 
-<script type="text/template" id="ahmaps_feature_template">
-	<td><%- titre %></td>
+<script type="text/template" id="ahmaps_feature_template_0">
+	<td><%- titre %></td><td><%- commune %></td><td><%- anneeb %></td>
+</script>
+
+<script type="text/template" id="ahmaps_feature_template_1">
+	<td><%- nom %>, <%- prenom %></td><td><%- titre %></td><td><%- city %></td><td><%- annee_debut %></td>
 </script>
