@@ -212,8 +212,8 @@ var ahmapsQueryAppConfig, jQuery, google;
 	 * Table row view of a feature.
  	 */
 	var FeatureView = Backbone.View.extend( {
-		
-		tagName: 'tr', 
+
+		tagName: 'tr',
 
 		model: Feature,
 
@@ -230,20 +230,15 @@ var ahmapsQueryAppConfig, jQuery, google;
 	 * UI to manipulate a query
 	 */
 	var QueryView = Backbone.View.extend( {
-		
+
 		template: _.template( $( '#ahmaps_query_template' ).html() ),
 
 		initialize: function( options ) {
 			// Create UI elements
 			this.$el.html( this.template( { cid: this.cid } ) );
+			this.createMap();
 
 			// Reference UI elements
-			this.$map = this.$( '.map' );
-			this.map = new google.maps.Map( this.$map.get( 0 ), {
-				center: new google.maps.LatLng( 0, 0 ),
-				zoom: 1,
-				mapTypeId: google.maps.MapTypeId.TERRAIN
-			} );
 			this.$queryTypeRadios = this.$( 'input.query-type' );
 			this.$queryTypePanels = this.$( '.query-type-panel' ).hide().eq( 0 ).show().end();
 			this.$mapPanel = this.$( '.map-panel' );
@@ -285,6 +280,75 @@ var ahmapsQueryAppConfig, jQuery, google;
 					alert( text_status );
 				};
 			}
+		},
+
+		createMap: function() {
+			var custom_styles = [
+				{
+					featureType: "landscape.natural",
+					stylers: [
+						{ visibility: "on" },
+						{ hue: "#ffbb00" },
+						{ lightness: 26 }
+					]
+				},{
+					featureType: "water",
+					stylers: [
+						{ visibility: "on" },
+						{ hue: "#00bbff" }
+					]
+				},{
+					featureType: "landscape",
+					stylers: [
+						{ visibility: "on" }
+					]
+				},{
+					featureType: "landscape.man_made",
+					stylers: [
+						{ visibility: "off" }
+					]
+				},{
+					featureType: "road",
+					stylers: [
+						{ visibility: "off" }
+					]
+				},{
+					featureType: "administrative",
+					stylers: [
+						{ visibility: "off" }
+					]
+				},{
+					featureType: "poi",
+					stylers: [
+						{ visibility: "off" }
+					]
+				},{
+					"featureType": "transit",
+					"stylers": [
+						{ "visibility": "off" }
+					]
+				},{
+					featureType: "administrative.locality",
+					stylers: [
+						{ visibility: "on" },
+						{ hue: "#0019ff" },
+						{ lightness: -1 },
+						{ saturation: -46 }
+					]
+				}
+			];
+			var map_type = new google.maps.StyledMapType( custom_styles, { name: 'custom' } );
+
+			this.$map = this.$( '.map' );
+			this.map = new google.maps.Map( this.$map.get( 0 ), {
+				center: new google.maps.LatLng( 0, 0 ),
+				zoom: 1,
+				mapTypeControlOptions: {
+					mapTypeIds: [ google.maps.MapTypeId.TERRAIN, 'custom' ]
+				}
+			} );
+			this.map.mapTypes.set( 'custom', map_type );
+			this.map.setMapTypeId( 'custom' );
 		},
 
 		events: {
@@ -426,7 +490,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 	 * Overall UI
 	 */
 	var AppView = Backbone.View.extend( {
-		
+
 		el: $( '#ahmaps_query_app' ),
 
 		events: {
@@ -462,7 +526,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 			this.$centerLatInput = $( '#ahmaps_center_lat' );
 			this.$centerLngInput = $( '#ahmaps_center_lng' );
 			this.$attachButton = this.$( 'input.attach-button' );
-			
+
 			this.queryViews[0].on( 'newCenter', this.newCenter, this );
 			this.activeQueryIndex = 0;
 
@@ -488,7 +552,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 
 		attachData: function( e ) {
 			this.$primaryKmlUrlInput.val( this.queryViews[0].query.getKmzUrl() );
-		}, 
+		},
 
 		switchTab: function( e, ui ) {
 			this.activeQueryIndex = ui.newTab.index();
@@ -500,7 +564,7 @@ var ahmapsQueryAppConfig, jQuery, google;
 				this.$centerLatInput.val( centerLatLng.lat() );
 				this.$centerLngInput.val( centerLatLng.lng() );
 			}
-		}, 
+		},
 
 		showTabs: function() {
 			this.$newPanel.hide();
